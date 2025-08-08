@@ -341,13 +341,26 @@ function LeagueManager() {
       const playersResponse = await fetch('https://api.sleeper.app/v1/players/nfl');
       const allPlayers = await playersResponse.json();
       
-      // Fetch roster data
-      const rosterWithNames = league.userRoster.players?.map(playerId => ({
-        id: playerId,
-        name: allPlayers[playerId]?.full_name || 'Unknown Player',
-        position: allPlayers[playerId]?.position || 'N/A',
-        team: allPlayers[playerId]?.team || 'FA'
-      })) || [];
+      // Get player stats for the season
+      const playerStatsResponse = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${league.season}`);
+      const playerStats = playerStatsResponse.ok ? await playerStatsResponse.json() : {};
+      
+      // Fetch roster data with stats
+      const rosterWithNames = league.userRoster.players?.map(playerId => {
+        const stats = playerStats[playerId] || {};
+        const fantasyPoints = stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
+        
+        return {
+          id: playerId,
+          name: allPlayers[playerId]?.full_name || 'Unknown Player',
+          position: allPlayers[playerId]?.position || 'N/A',
+          team: allPlayers[playerId]?.team || 'FA',
+          fantasyPoints: fantasyPoints
+        };
+      }) || [];
+      
+      // Sort roster by fantasy points (highest to lowest)
+      rosterWithNames.sort((a, b) => b.fantasyPoints - a.fantasyPoints);
       
       // Fetch transactions
       const transactionsResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/1`);
@@ -1591,6 +1604,9 @@ function LeagueManager() {
                                   </button>
                                 </div>
                                 <div className="text-right flex-shrink-0">
+                                  <div className="font-bold text-green-600 dark:text-green-400">
+                                    {player.fantasyPoints.toFixed(1)}
+                                  </div>
                                   <div className="text-xs text-gray-500">{player.team}</div>
                                 </div>
                               </div>
