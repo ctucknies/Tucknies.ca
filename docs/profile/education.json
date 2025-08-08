@@ -1,0 +1,10 @@
+{
+  "education": [
+    {
+      "title": "Your Degree",
+      "subtitle": "University Name",
+      "duration": "2020-2024",
+      "details": ["Relevant coursework", "Achievements"]
+    }
+  ]
+}

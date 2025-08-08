@@ -1,0 +1,10 @@
+{
+  "experiences": [
+    {
+      "title": "Job Title",
+      "subtitle": "Company Name",
+      "duration": "2023-Present",
+      "details": ["Responsibility 1", "Responsibility 2"]
+    }
+  ]
+}

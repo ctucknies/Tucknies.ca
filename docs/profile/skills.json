@@ -1,0 +1,12 @@
+{
+  "skills": [
+    {
+      "title": "Programming Languages",
+      "items": ["JavaScript", "Python", "Java"]
+    },
+    {
+      "title": "Frameworks",
+      "items": ["React", "Node.js", "Express"]
+    }
+  ]
+}

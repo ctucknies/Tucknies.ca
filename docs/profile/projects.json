@@ -1,0 +1,11 @@
+{
+  "projects": [
+    {
+      "title": "Project Name",
+      "description": "Project description",
+      "technologies": ["React", "JavaScript"],
+      "github": "https://github.com/ctucknies/project",
+      "image": "images/project1.jpg"
+    }
+  ]
+}
