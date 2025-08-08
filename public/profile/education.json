@@ -1,10 +1,14 @@
 {
-  "education": [
-    {
-      "title": "Computer Science",
-      "subtitle": "University",
-      "duration": "2020-2024",
-      "details": ["Software Engineering", "Web Development"]
-    }
-  ]
+    "education":[
+        {
+            "title": "Sept 2015 - May 2019",
+            "cardTitle": "B.Arts, Sociology, Social Research Honors",
+            "cardSubtitle":"University of the Fraser Valley, Abbotsford, B.C."
+        },
+        {
+            "title": "Sept 2014 - May 2015",
+            "cardTitle": "Certificiate in Computer Information Systems",
+            "cardSubtitle":"University of the Fraser Valley, Abbotsford, B.C."
+        }
+    ]
 }

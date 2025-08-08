@@ -1,10 +1,35 @@
 {
-  "experiences": [
-    {
-      "title": "Software Developer",
-      "subtitle": "Tech Company",
-      "duration": "2023-Present",
-      "details": ["Full-stack development", "React applications"]
-    }
-  ]
+    "experiences": [
+        {
+            "title": "Senior Quality Engineer",
+            "subtitle": "Paper.co",
+            "workType": "Full-time",
+            "workDescription": [
+                "Performed thorough **Frontend** and **Backend** testing of a modern web app.",
+                "Implemented efficient Frontend and Backend automation using Postman and Cypress."
+            ],
+            "dateText": "09/2022 – 09/2023"
+        },
+        {
+            "title": "Software Development Engineer in Test",
+            "subtitle": "Trimble Transportation",
+            "workType": "Full-time",
+            "workDescription": [
+                "Developed and upheld standardized testing practices, including test driven development.",
+                "Trained team members on QA standards"
+            ],
+            "dateText": "02/2022 – 09/2022"
+        },
+        {
+            "title": "Quality Assurance Engineer",
+            "subtitle": "Trimble Transportation",
+            "workType": "Full-time",
+            "workDescription": [
+                "Tested the development of our rapidly evolving REST APIs and our Web product offering.",
+                "Assisted in translating customers business case scenarios into a development solution.",
+                "Acting Team Scrum Master."
+            ],
+            "dateText": "05/2020 – 02/2022"
+        }
+    ]
 }

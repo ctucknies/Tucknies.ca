@@ -1,29 +1,34 @@
 {
-  "sections": [
-    {
-      "headerTitle": "About",
-      "path": "/about",
-      "component": "About"
-    },
-    {
-      "headerTitle": "Skills",
-      "path": "/skills", 
-      "component": "Skills"
-    },
-    {
-      "headerTitle": "Education",
-      "path": "/education",
-      "component": "Education"
-    },
-    {
-      "headerTitle": "Experience",
-      "path": "/experience",
-      "component": "Experience"
-    },
-    {
-      "headerTitle": "Projects",
-      "path": "/projects",
-      "component": "Projects"
-    }
-  ]
+    "sections": [
+        {
+            "component": "About",
+            "path": "/about",
+            "headerTitle": "About"
+        },
+        {
+            "component": "Skills",
+            "path": "/skills",
+            "headerTitle": "Skills"
+        },
+        {
+            "component": "Education",
+            "path": "/education",
+            "headerTitle": "Education"
+        },
+        {
+            "component": "Experience",
+            "path": "/experience",
+            "headerTitle": "Experience"
+        },
+        {
+            "component": "Projects",
+            "path": "/projects",
+            "headerTitle": "Projects"
+        },
+        {
+            "component": "LeagueManager",
+            "path": "/ff-manager",
+            "headerTitle": "Fantasy Manager"
+        }
+    ]
 }

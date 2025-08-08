@@ -1,8 +1,16 @@
 {
-  "social": [
-    {
-      "network": "github",
-      "url": "https://github.com/ctucknies"
-    }
-  ]
+    "social": [
+        {
+            "network" : "linkedin",
+            "href": "https://www.linkedin.com/in/connor-tucknies/"
+        },
+        {
+            "network" : "github",
+            "href": "https://github.com/ctucknies"
+        },
+        {
+            "network" : "email",
+            "href": "mailto:connortucknies@hotmail.com"
+        }
+    ]
 }
