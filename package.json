@@ -2,6 +2,7 @@
   "name": "portfolio-app",
   "version": "0.1.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
@@ -34,7 +35,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "react-scripts build",
+    "build": "set BUILD_PATH=docs&& react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
