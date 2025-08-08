@@ -3,6 +3,8 @@ import './App.css';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MainApp from './MainApp';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Auth from './components/Auth';
 
 const ThemeContext = createContext();
 
@@ -25,7 +27,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function AppContent() {
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('darkMode');
     return saved ? JSON.parse(saved) : false;
@@ -39,16 +41,24 @@ function App() {
   const toggleTheme = () => setIsDark(!isDark);
 
   return (
+    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+      <div className={`min-h-screen transition-colors duration-300 ${
+        isDark ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'
+      }`}>
+        <BrowserRouter>
+          <MainApp />
+        </BrowserRouter>
+      </div>
+    </ThemeContext.Provider>
+  );
+}
+
+function App() {
+  return (
     <QueryClientProvider client={queryClient}>
-      <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-        <div className={`min-h-screen transition-colors duration-300 ${
-          isDark ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'
-        }`}>
-          <BrowserRouter>
-            <MainApp />
-          </BrowserRouter>
-        </div>
-      </ThemeContext.Provider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

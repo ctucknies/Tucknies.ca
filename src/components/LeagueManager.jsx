@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MagnifyingGlassIcon, 
@@ -13,6 +13,10 @@ import {
   CheckCircleIcon,
   XCircleIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
+import Auth from './Auth';
+import UserProfile from './UserProfile';
+import { supabase } from '../lib/supabase';
 
 const calculatePlacement = (playoffs, userRosterId) => {
   if (!playoffs || !userRosterId) return null;
@@ -43,7 +47,11 @@ const calculateWinStreak = (matchups) => {
 };
 
 function LeagueManager() {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({ username: '', year: new Date().getFullYear().toString() });
+  const [showAuth, setShowAuth] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [prevUser, setPrevUser] = useState(null);
   const [allYearsData, setAllYearsData] = useState(null);
   const [showingAllYears, setShowingAllYears] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -77,6 +85,37 @@ function LeagueManager() {
   const [showPlayerStats, setShowPlayerStats] = useState(false);
   const [playerStatsData, setPlayerStatsData] = useState(null);
   const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
+
+  // Load saved profile data if user is logged in
+  useEffect(() => {
+    if (user) {
+      loadUserProfile();
+      // Close auth modal if user just logged in
+      if (!prevUser && user) {
+        setShowAuth(false);
+      }
+    }
+    setPrevUser(user);
+  }, [user, prevUser]);
+
+  const loadUserProfile = async () => {
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('sleeper_username, favorite_year')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setFormData({
+          username: data.sleeper_username || '',
+          year: data.favorite_year || new Date().getFullYear().toString()
+        });
+      }
+    } catch (error) {
+      console.log('No saved profile found');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -954,6 +993,39 @@ function LeagueManager() {
         <p className="text-gray-600 dark:text-gray-300">
           View all your leagues in one centralized dashboard
         </p>
+        
+        {/* Auth Status */}
+        <div className="mt-4 flex items-center justify-center gap-4">
+          {user ? (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-green-600 dark:text-green-400">✓ Signed in as {user.email}</span>
+              <button
+                onClick={() => setShowProfile(true)}
+                className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800"
+              >
+                Profile
+              </button>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-2">Want to save your settings?</p>
+              <div className="flex gap-2 justify-center">
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                >
+                  Sign In
+                </button>
+                <button
+                  onClick={() => setShowAuth(true)}
+                  className="text-sm bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                >
+                  Sign Up
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       <motion.div
@@ -2849,6 +2921,36 @@ function LeagueManager() {
             </div>
           </motion.div>
         </motion.div>
+      )}
+      
+      {/* Auth Modal */}
+      {showAuth && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+          onClick={() => setShowAuth(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowAuth(false)}
+              className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full p-2"
+            >
+              ✕
+            </button>
+            <Auth />
+          </motion.div>
+        </motion.div>
+      )}
+      
+      {/* Profile Modal */}
+      {showProfile && (
+        <UserProfile onClose={() => setShowProfile(false)} />
       )}
     </div>
   );
