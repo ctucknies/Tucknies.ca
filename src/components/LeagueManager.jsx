@@ -85,6 +85,8 @@ function LeagueManager() {
   const [showPlayerStats, setShowPlayerStats] = useState(false);
   const [playerStatsData, setPlayerStatsData] = useState(null);
   const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
+  const [showChampionships, setShowChampionships] = useState(false);
+  const [championshipData, setChampionshipData] = useState([]);
 
   // Load saved profile data if user is logged in
   useEffect(() => {
@@ -1271,7 +1273,19 @@ function LeagueManager() {
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total Leagues</div>
               </div>
-              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded">
+              <button
+                onClick={() => {
+                  const championships = Object.entries(allYearsData).flatMap(([year, leagues]) => 
+                    leagues.filter(l => 
+                      l.placement === 1 || 
+                      (l.champion && (l.champion.username === userData?.display_name || l.champion.username === userData?.username))
+                    ).map(league => ({ ...league, year }))
+                  );
+                  setChampionshipData(championships);
+                  setShowChampionships(true);
+                }}
+                className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded hover:bg-green-100 dark:hover:bg-green-800/30 transition-colors cursor-pointer w-full"
+              >
                 <div className="text-xl font-bold text-green-600">
                   {Object.values(allYearsData).flat().filter(l => 
                     l.placement === 1 || 
@@ -1279,7 +1293,7 @@ function LeagueManager() {
                   ).length}
                 </div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Championships</div>
-              </div>
+              </button>
               <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded">
                 <div className="text-xl font-bold text-yellow-600">
                   {Object.keys(allYearsData).length}
@@ -2951,6 +2965,137 @@ function LeagueManager() {
       {/* Profile Modal */}
       {showProfile && (
         <UserProfile onClose={() => setShowProfile(false)} />
+      )}
+      
+      {/* Championships Modal */}
+      {showChampionships && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+          onClick={() => setShowChampionships(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white dark:bg-gray-800 rounded-xl max-w-4xl w-full max-h-[90vh] sm:max-h-[80vh] overflow-y-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 sm:p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold flex items-center gap-2">
+                  🏆 Your Championships ({championshipData.length})
+                </h3>
+                <button
+                  onClick={() => setShowChampionships(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              {championshipData.length > 0 ? (
+                <div className="space-y-6">
+                  {championshipData.map((championship, index) => (
+                    <div key={`${championship.league_id}-${championship.year}`} className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-6 rounded-xl border border-yellow-200 dark:border-yellow-800">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h4 className="text-xl font-bold text-yellow-800 dark:text-yellow-200 flex items-center gap-2">
+                            🥇 {championship.year} Champion
+                          </h4>
+                          <p className="text-lg font-semibold text-gray-800 dark:text-gray-200">{championship.name}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 capitalize">{championship.status} • {championship.total_rosters} teams</p>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                            #{championship.placement || 1}
+                          </div>
+                          <div className="text-sm text-gray-500">Final Rank</div>
+                        </div>
+                      </div>
+                      
+                      {championship.regularSeasonRecord && (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
+                            <div className="text-lg font-bold text-green-600">
+                              {championship.regularSeasonRecord.wins}-{championship.regularSeasonRecord.losses}
+                              {championship.regularSeasonRecord.ties > 0 && `-${championship.regularSeasonRecord.ties}`}
+                            </div>
+                            <div className="text-sm text-gray-500">Regular Season</div>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
+                            <div className="text-lg font-bold text-blue-600">
+                              {championship.regularSeasonRecord.points_for.toFixed(1)}
+                            </div>
+                            <div className="text-sm text-gray-500">Points For</div>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
+                            <div className="text-lg font-bold text-red-600">
+                              {championship.regularSeasonRecord.points_against.toFixed(1)}
+                            </div>
+                            <div className="text-sm text-gray-500">Points Against</div>
+                          </div>
+                          <div className="bg-white dark:bg-gray-800 p-3 rounded-lg text-center">
+                            <div className={`text-lg font-bold ${
+                              championship.regularSeasonRecord.points_for - championship.regularSeasonRecord.points_against > 0 
+                                ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {championship.regularSeasonRecord.points_for - championship.regularSeasonRecord.points_against > 0 ? '+' : ''}
+                              {(championship.regularSeasonRecord.points_for - championship.regularSeasonRecord.points_against).toFixed(1)}
+                            </div>
+                            <div className="text-sm text-gray-500">Point Diff</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg">
+                        <h5 className="font-semibold mb-3 text-gray-800 dark:text-gray-200">Championship Details</h5>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400">League:</span>
+                            <p className="font-medium">{championship.name}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400">Season:</span>
+                            <p className="font-medium">{championship.year}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400">Scoring:</span>
+                            <p className="font-medium capitalize">{championship.scoring_settings?.rec || 'Standard'}</p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500 dark:text-gray-400">Teams:</span>
+                            <p className="font-medium">{championship.total_rosters}</p>
+                          </div>
+                        </div>
+                        
+                        {championship.userRoster && (
+                          <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                            <button
+                              onClick={() => {
+                                setShowChampionships(false);
+                                fetchRosterDetails(championship);
+                              }}
+                              className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors"
+                            >
+                              View Championship Roster & Stats
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="text-4xl mb-4">🏆</div>
+                  <p className="text-gray-500">No championships yet</p>
+                  <p className="text-sm text-gray-400 mt-2">Keep grinding - your first title is coming!</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   );
