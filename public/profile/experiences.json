@@ -1,0 +1,10 @@
+{
+  "experiences": [
+    {
+      "title": "Software Developer",
+      "subtitle": "Tech Company",
+      "duration": "2023-Present",
+      "details": ["Full-stack development", "React applications"]
+    }
+  ]
+}

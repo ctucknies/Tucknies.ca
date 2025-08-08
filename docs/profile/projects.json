@@ -1,0 +1,11 @@
+{
+  "projects": [
+    {
+      "title": "Portfolio Website",
+      "description": "Personal portfolio built with React",
+      "technologies": ["React", "JavaScript", "Tailwind CSS"],
+      "github": "https://github.com/ctucknies/Tucknies.ca",
+      "image": ""
+    }
+  ]
+}

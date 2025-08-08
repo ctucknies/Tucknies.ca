@@ -1,0 +1,10 @@
+{
+  "education": [
+    {
+      "title": "Computer Science",
+      "subtitle": "University",
+      "duration": "2020-2024",
+      "details": ["Software Engineering", "Web Development"]
+    }
+  ]
+}
