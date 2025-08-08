@@ -984,7 +984,7 @@ function LeagueManager() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-8"
+        className="text-center mb-8 pt-8"
       >
         <TrophyIcon className="w-16 h-16 mx-auto mb-4 text-primary-600" />
         <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">

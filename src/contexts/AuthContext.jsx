@@ -16,6 +16,11 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!supabase) {
+      setLoading(false)
+      return
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -34,6 +39,7 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   const signUp = async (email, password) => {
+    if (!supabase) return { error: { message: 'Authentication not configured' } }
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -42,6 +48,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const signIn = async (email, password) => {
+    if (!supabase) return { error: { message: 'Authentication not configured' } }
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -50,6 +57,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   const signOut = async () => {
+    if (!supabase) return { error: { message: 'Authentication not configured' } }
     const { error } = await supabase.auth.signOut()
     return { error }
   }
