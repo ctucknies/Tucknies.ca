@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import './App.css';
-import { BrowserRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MainApp from './MainApp';
 
@@ -44,9 +44,9 @@ function App() {
         <div className={`min-h-screen transition-colors duration-300 ${
           isDark ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'
         }`}>
-          <BrowserRouter>
+          <HashRouter>
             <MainApp />
-          </BrowserRouter>
+          </HashRouter>
         </div>
       </ThemeContext.Provider>
     </QueryClientProvider>

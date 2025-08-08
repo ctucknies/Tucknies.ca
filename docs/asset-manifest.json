@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/Tucknies.ca/static/css/main.ca9218ae.css",
-    "main.js": "/Tucknies.ca/static/js/main.83cae6f8.js",
+    "main.js": "/Tucknies.ca/static/js/main.da4cb360.js",
     "static/js/124.8ebc8298.chunk.js": "/Tucknies.ca/static/js/124.8ebc8298.chunk.js",
     "static/js/700.3974f9e5.chunk.js": "/Tucknies.ca/static/js/700.3974f9e5.chunk.js",
     "static/js/214.c51c4e68.chunk.js": "/Tucknies.ca/static/js/214.c51c4e68.chunk.js",
@@ -14,7 +14,7 @@
     "static/js/909.2d3211dc.chunk.js": "/Tucknies.ca/static/js/909.2d3211dc.chunk.js",
     "index.html": "/Tucknies.ca/index.html",
     "main.ca9218ae.css.map": "/Tucknies.ca/static/css/main.ca9218ae.css.map",
-    "main.83cae6f8.js.map": "/Tucknies.ca/static/js/main.83cae6f8.js.map",
+    "main.da4cb360.js.map": "/Tucknies.ca/static/js/main.da4cb360.js.map",
     "124.8ebc8298.chunk.js.map": "/Tucknies.ca/static/js/124.8ebc8298.chunk.js.map",
     "700.3974f9e5.chunk.js.map": "/Tucknies.ca/static/js/700.3974f9e5.chunk.js.map",
     "214.c51c4e68.chunk.js.map": "/Tucknies.ca/static/js/214.c51c4e68.chunk.js.map",
@@ -28,6 +28,6 @@
   },
   "entrypoints": [
     "static/css/main.ca9218ae.css",
-    "static/js/main.83cae6f8.js"
+    "static/js/main.da4cb360.js"
   ]
 }
