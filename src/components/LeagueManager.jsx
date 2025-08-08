@@ -941,7 +941,7 @@ function LeagueManager() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -963,7 +963,7 @@ function LeagueManager() {
         className="card p-6 mb-8"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="username" className="block text-sm font-medium mb-2">
                 Sleeper Username
@@ -1085,7 +1085,7 @@ function LeagueManager() {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold mb-2">{league.name}</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Teams:</span>
                         <p className="font-medium">{league.total_rosters}</p>
@@ -1262,7 +1262,7 @@ function LeagueManager() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h3 className="text-xl font-semibold mb-2">{league.name}</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
                           <div>
                             <span className="text-gray-500 dark:text-gray-400">Teams:</span>
                             <p className="font-medium">{league.total_rosters}</p>
@@ -1361,9 +1361,9 @@ function LeagueManager() {
             className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">{selectedLeague.name}</h3>
+                <h3 className="text-lg sm:text-xl font-bold">{selectedLeague.name}</h3>
                 <button
                   onClick={closeModal}
                   className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -1373,7 +1373,7 @@ function LeagueManager() {
               </div>
               
               {/* Tabs */}
-              <div className="grid grid-cols-4 lg:grid-cols-7 gap-1 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                 {[
                   { id: 'overview', label: 'Overview', icon: HomeIcon },
                   { id: 'players', label: 'My Roster', icon: UserIcon },
@@ -2146,7 +2146,7 @@ function LeagueManager() {
               ) : leagueInfoData && (
                 <div>
                   {/* Tabs */}
-                  <div className="flex space-x-1 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                  <div className="grid grid-cols-2 sm:flex sm:space-x-1 gap-1 sm:gap-0 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                     {[
                       { id: 'standings', label: 'Standings', icon: '🏆' },
                       { id: 'teams', label: 'All Teams', icon: '👥' },
