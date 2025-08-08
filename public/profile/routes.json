@@ -1,32 +1,27 @@
 {
-  "routes": [
+  "sections": [
     {
-      "title": "Home",
-      "path": "/",
-      "component": "Home"
-    },
-    {
-      "title": "About",
+      "headerTitle": "About",
       "path": "/about",
       "component": "About"
     },
     {
-      "title": "Skills",
+      "headerTitle": "Skills",
       "path": "/skills", 
       "component": "Skills"
     },
     {
-      "title": "Education",
+      "headerTitle": "Education",
       "path": "/education",
       "component": "Education"
     },
     {
-      "title": "Experience",
+      "headerTitle": "Experience",
       "path": "/experience",
       "component": "Experience"
     },
     {
-      "title": "Projects",
+      "headerTitle": "Projects",
       "path": "/projects",
       "component": "Projects"
     }
