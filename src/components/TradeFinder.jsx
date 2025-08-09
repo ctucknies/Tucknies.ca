@@ -112,6 +112,9 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
   const [userTeamName, setUserTeamName] = useState('');
   const [showPositionModal, setShowPositionModal] = useState(false);
   const [selectedPositionData, setSelectedPositionData] = useState(null);
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [positionWeights, setPositionWeights] = useState({ QB: 0.75, RB: 1.0, WR: 0.95, TE: 1.05 });
+  const defaultWeights = { QB: 0.75, RB: 1.0, WR: 0.95, TE: 1.05 };
 
 
   useEffect(() => {
@@ -474,8 +477,15 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
   };
 
   const getPositionScarcity = (position) => {
-    const scarcity = { QB: 0.75, RB: 1.0, WR: 0.95, TE: 1.05 };
-    return scarcity[position] || 1.0;
+    return positionWeights[position] || 1.0;
+  };
+
+  const resetWeights = () => {
+    setPositionWeights({ ...defaultWeights });
+  };
+
+  const updateWeight = (position, value) => {
+    setPositionWeights(prev => ({ ...prev, [position]: parseFloat(value) || 0 }));
   };
 
   const generate1for1Trade = (team1, team2, pos1, pos2) => {
@@ -630,7 +640,45 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
             >
               {loading ? 'Analyzing...' : 'Find Trades'}
             </button>
+            <button
+              onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+              className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+            >
+              Advanced Options
+            </button>
           </div>
+          {showAdvancedOptions && (
+            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold">Position Weights</h3>
+                <button
+                  onClick={resetWeights}
+                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                >
+                  Reset to Default
+                </button>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries(positionWeights).map(([position, weight]) => (
+                  <div key={position}>
+                    <label className="block text-sm font-medium mb-1">{position}</label>
+                    <input
+                      type="number"
+                      step="0.05"
+                      min="0.1"
+                      max="2.0"
+                      value={weight}
+                      onChange={(e) => updateWeight(position, e.target.value)}
+                      className="w-full p-2 border rounded bg-white dark:bg-gray-600 text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Higher values make positions more valuable in trades. Changes apply to new trade searches.
+              </p>
+            </div>
+          )}
         </motion.div>
 
         {Object.keys(teamStrengths).length > 0 && (
