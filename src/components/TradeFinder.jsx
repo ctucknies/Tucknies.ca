@@ -488,6 +488,90 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     setPositionWeights(prev => ({ ...prev, [position]: parseFloat(value) || 0 }));
   };
 
+  const getReplacementValue = (position) => {
+    // Replacement level values based on typical waiver wire players
+    const replacementValues = { QB: 12, RB: 6, WR: 8, TE: 5 };
+    return replacementValues[position] || 0;
+  };
+
+  const calculatePositionValue = (players, position) => {
+    if (!players || players.length === 0) return getReplacementValue(position);
+    
+    const sorted = [...players].sort((a, b) => b.fantasyPoints - a.fantasyPoints);
+    
+    if (position === 'QB' || position === 'TE') {
+      return sorted[0]?.fantasyPoints || getReplacementValue(position);
+    }
+    
+    if (position === 'RB') {
+      const topPlayers = sorted.slice(0, 3);
+      if (topPlayers.length === 0) return getReplacementValue(position);
+      const total = topPlayers.reduce((sum, p) => sum + p.fantasyPoints, 0);
+      const missing = Math.max(0, 3 - topPlayers.length);
+      return (total + (missing * getReplacementValue(position))) / 3;
+    }
+    
+    if (position === 'WR') {
+      const topPlayers = sorted.slice(0, 4);
+      if (topPlayers.length === 0) return getReplacementValue(position);
+      const total = topPlayers.reduce((sum, p) => sum + p.fantasyPoints, 0);
+      const missing = Math.max(0, 4 - topPlayers.length);
+      return (total + (missing * getReplacementValue(position))) / 4;
+    }
+    
+    return sorted[0]?.fantasyPoints || getReplacementValue(position);
+  };
+
+  const simulateTrade = (team1, team2, team1Gives, team2Gives) => {
+    // Create new rosters after trade
+    const newTeam1Players = { ...team1.players };
+    const newTeam2Players = { ...team2.players };
+    
+    // Remove given players and add received players
+    team1Gives.forEach(give => {
+      const posKey = give.position.toLowerCase() + 's';
+      newTeam1Players[posKey] = newTeam1Players[posKey]?.filter(p => p.id !== give.player.id) || [];
+    });
+    
+    team2Gives.forEach(give => {
+      const posKey = give.position.toLowerCase() + 's';
+      newTeam1Players[posKey] = [...(newTeam1Players[posKey] || []), give.player];
+    });
+    
+    team2Gives.forEach(give => {
+      const posKey = give.position.toLowerCase() + 's';
+      newTeam2Players[posKey] = newTeam2Players[posKey]?.filter(p => p.id !== give.player.id) || [];
+    });
+    
+    team1Gives.forEach(give => {
+      const posKey = give.position.toLowerCase() + 's';
+      newTeam2Players[posKey] = [...(newTeam2Players[posKey] || []), give.player];
+    });
+    
+    // Calculate new position values
+    const newTeam1Values = {
+      QB: calculatePositionValue(newTeam1Players.qbs, 'QB'),
+      RB: calculatePositionValue(newTeam1Players.rbs, 'RB'),
+      WR: calculatePositionValue(newTeam1Players.wrs, 'WR'),
+      TE: calculatePositionValue(newTeam1Players.tes, 'TE')
+    };
+    
+    const newTeam2Values = {
+      QB: calculatePositionValue(newTeam2Players.qbs, 'QB'),
+      RB: calculatePositionValue(newTeam2Players.rbs, 'RB'),
+      WR: calculatePositionValue(newTeam2Players.wrs, 'WR'),
+      TE: calculatePositionValue(newTeam2Players.tes, 'TE')
+    };
+    
+    // Calculate net gains
+    const team1NetGain = Object.keys(newTeam1Values).reduce((sum, pos) => 
+      sum + (newTeam1Values[pos] - team1[pos]), 0);
+    const team2NetGain = Object.keys(newTeam2Values).reduce((sum, pos) => 
+      sum + (newTeam2Values[pos] - team2[pos]), 0);
+    
+    return { team1NetGain, team2NetGain, valid: team1NetGain > 0 && team2NetGain > 0 };
+  };
+
   const generate1for1Trade = (team1, team2, pos1, pos2) => {
     const team1Players = team1.players[pos1.toLowerCase() + 's'] || [];
     const team2Players = team2.players[pos2.toLowerCase() + 's'] || [];
@@ -497,13 +581,16 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     const team1Player = team1Players[0];
     const team2Player = team2Players[0];
 
+    const team1Gives = [{ player: team1Player, position: pos1 }];
+    const team2Gives = [{ player: team2Player, position: pos2 }];
+    
+    const simulation = simulateTrade(team1, team2, team1Gives, team2Gives);
+    if (!simulation.valid) return null;
+
     const team1Value = team1Player.fantasyPoints * getPositionScarcity(pos1);
     const team2Value = team2Player.fantasyPoints * getPositionScarcity(pos2);
     const valueDiff = Math.abs(team1Value - team2Value);
     
-    // Only suggest if within 2 pts/wk after scarcity adjustment
-    if (valueDiff > 2) return null;
-
     // Always put user's team first
     const isTeam1User = team1.teamName === userTeamName;
     return {
@@ -525,23 +612,19 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     
     if (!player1 || !player2 || !receivingPlayer) return null;
 
-    // Get worst player from receiving team for roster spot value
-    const allReceivingPlayers = [...(receivingTeam.players.qbs || []), 
-                               ...(receivingTeam.players.rbs || []), 
-                               ...(receivingTeam.players.wrs || []),
-                               ...(receivingTeam.players.tes || [])]
-                               .sort((a, b) => a.fantasyPoints - b.fantasyPoints);
-    const worstPlayer = allReceivingPlayers[0];
-    const rosterSpotValue = (worstPlayer?.fantasyPoints || 0) * getPositionScarcity(worstPlayer?.position || 'WR');
+    const givingTeamGives = [
+      { player: player1, position: givingPositions[0] },
+      { player: player2, position: givingPositions[1] }
+    ];
+    const receivingTeamGives = [{ player: receivingPlayer, position: receivingPosition }];
+    
+    const simulation = simulateTrade(givingTeam, receivingTeam, givingTeamGives, receivingTeamGives);
+    if (!simulation.valid) return null;
 
     const givingValue = (player1.fantasyPoints * getPositionScarcity(givingPositions[0])) + 
                        (player2.fantasyPoints * getPositionScarcity(givingPositions[1]));
-    const receivingValue = (receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition)) - rosterSpotValue;
+    const receivingValue = receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition);
     const valueDiff = Math.abs(givingValue - receivingValue);
-    
-    // Check fairness: giving team should get +4 pts extra, or receiving team gets 1 pt less
-    const isGivingFair = (receivingValue - givingValue) >= 4 || (givingValue - receivingValue) <= 1;
-    if (!isGivingFair) return null;
 
     // Always put user's team first
     const isGivingUser = givingTeam.teamName === userTeamName;
@@ -558,7 +641,6 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
         { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
       ],
       valueDifference: valueDiff,
-      rosterSpotValue,
       fairness: valueDiff <= 1 ? 'Fair' : valueDiff <= 4 ? 'Good' : 'Moderate'
     };
   };

@@ -1245,6 +1245,10 @@ function LeagueManager() {
               <span className="font-medium">Trade Finder</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              <UserIcon className="w-5 h-5" />
+              <span className="font-medium">Trade Player</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
               <ChartBarIcon className="w-5 h-5" />
               <span className="font-medium">Analytics</span>
             </button>
