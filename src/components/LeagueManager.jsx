@@ -10,7 +10,11 @@ import {
   ArrowsRightLeftIcon,
   StarIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  Bars3Icon,
+  Cog6ToothIcon,
+  BellIcon,
+  QuestionMarkCircleIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import Auth from './Auth';
@@ -70,6 +74,7 @@ function LeagueManager() {
   const [showPlayerModal, setShowPlayerModal] = useState(false);
   const [selectedPlayerData, setSelectedPlayerData] = useState(null);
   const [loadingPlayerModal, setLoadingPlayerModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Load saved profile data if user is logged in
   useEffect(() => {
@@ -1164,52 +1169,130 @@ function LeagueManager() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto p-4 sm:p-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-8 pt-8"
-      >
-        <TrophyIcon className="w-16 h-16 mx-auto mb-4 text-primary-600" />
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">
-          Fantasy Football Dashboard
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300">
-          View all your leagues in one centralized dashboard
-        </p>
-        
-        {/* Auth Status */}
-        <div className="mt-4 flex items-center justify-center gap-4">
-          {user ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-green-600 dark:text-green-400">✓ Signed in as {user.email}</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <TrophyIcon className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="font-bold text-gray-900 dark:text-white">Fantasy Hub</h2>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Your dashboard</p>
+                </div>
+              </div>
               <button
-                onClick={() => setShowProfile(true)}
-                className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800"
+                onClick={() => setSidebarOpen(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
               >
-                Profile
+                <span className="text-gray-500 dark:text-gray-400 text-lg">×</span>
               </button>
             </div>
-          ) : (
-            <div className="text-center">
-              <p className="text-sm text-gray-500 mb-2">Want to save your settings?</p>
-              <div className="flex gap-2 justify-center">
+          </div>
+          
+          {/* Navigation */}
+          <div className="flex-1 p-4 space-y-2">
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              <HomeIcon className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              <ChartBarIcon className="w-5 h-5" />
+              <span className="font-medium">Analytics</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              <BellIcon className="w-5 h-5" />
+              <span className="font-medium">Notifications</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              <Cog6ToothIcon className="w-5 h-5" />
+              <span className="font-medium">Settings</span>
+            </button>
+            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
+              <QuestionMarkCircleIcon className="w-5 h-5" />
+              <span className="font-medium">Help</span>
+            </button>
+          </div>
+          
+          {/* Auth Section */}
+          <div className="p-4 border-t border-gray-200/50 dark:border-gray-700/50">
+            {user ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+                  <div className="w-2 h-2 bg-green-500 rounded-full" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.email}</p>
+                    <p className="text-xs text-green-600 dark:text-green-400">Signed in</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowProfile(true)}
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium"
+                >
+                  Profile Settings
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Sign in to unlock features</p>
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
+                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium"
                 >
                   Sign In
                 </button>
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="text-sm bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-3 py-1 rounded-full hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                  className="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium border border-gray-200 dark:border-gray-700"
                 >
                   Sign Up
                 </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
+      </div>
+      
+      {/* Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto p-6 sm:p-8">
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center mb-12 pt-12"
+      >
+        {!sidebarOpen && (
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="fixed top-6 left-6 z-[60] w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+          >
+            <Bars3Icon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+          </button>
+        )}
+        <div className="relative mb-8">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 blur-3xl rounded-full" />
+          <TrophyIcon className="w-20 h-20 mx-auto relative z-10 text-transparent bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 bg-clip-text" style={{filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.3))'}} />
+        </div>
+        <h1 className="text-5xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent mb-4 tracking-tight">
+          Fantasy Football
+        </h1>
+        <p className="text-xl text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto leading-relaxed">
+          Your complete fantasy experience, reimagined
+        </p>
+        
+
       </motion.div>
 
       <LeagueSearch 
@@ -1221,17 +1304,24 @@ function LeagueManager() {
 
       {error && (
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-red-50/80 dark:bg-red-900/20 backdrop-blur-xl border border-red-200/50 dark:border-red-800/50 rounded-2xl p-6 mb-8 shadow-lg"
         >
-          <p className="text-red-800 dark:text-red-200">{error}</p>
-          <button
-            onClick={resetSearch}
-            className="mt-2 text-sm text-red-600 dark:text-red-400 underline"
-          >
-            Try again
-          </button>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
+              <span className="text-red-600 dark:text-red-400 text-sm">⚠️</span>
+            </div>
+            <div>
+              <p className="text-red-800 dark:text-red-200 font-medium">{error}</p>
+              <button
+                onClick={resetSearch}
+                className="mt-1 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+              >
+                Try again →
+              </button>
+            </div>
+          </div>
         </motion.div>
       )}
 
@@ -1253,12 +1343,16 @@ function LeagueManager() {
             }}
           />
           
-          <div className="flex items-center gap-3 mb-6">
-            <UserGroupIcon className="w-8 h-8 text-primary-600" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <UserGroupIcon className="w-6 h-6 text-white" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold">Your Leagues ({leaguesData[0]?.season || formData.year})</h2>
-              <p className="text-gray-600 dark:text-gray-300">
-                Found {leaguesData.length} league{leaguesData.length !== 1 ? 's' : ''}
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                Your Leagues ({leaguesData[0]?.season || formData.year})
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">
+                {leaguesData.length} league{leaguesData.length !== 1 ? 's' : ''} found
               </p>
             </div>
           </div>
@@ -1296,11 +1390,15 @@ function LeagueManager() {
             }}
           />
           
-          <div className="flex items-center gap-3 mb-6">
-            <UserGroupIcon className="w-8 h-8 text-primary-600" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <UserGroupIcon className="w-6 h-6 text-white" />
+            </div>
             <div>
-              <h2 className="text-2xl font-bold">All Your Leagues</h2>
-              <p className="text-gray-600 dark:text-gray-300">
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                All Your Leagues
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 font-medium">
                 Complete history across all years
               </p>
             </div>
@@ -1310,10 +1408,15 @@ function LeagueManager() {
             .sort(([a], [b]) => parseInt(b) - parseInt(a))
             .map(([year, leagues]) => (
             <div key={year} className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl font-bold text-primary-600">{year}</div>
-                <div className="text-sm text-gray-500">
-                  {leagues.length} league{leagues.length !== 1 ? 's' : ''}
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <span className="text-2xl font-black text-white">{year}</span>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-gray-800 dark:text-gray-200">{year} Season</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                    {leagues.length} league{leagues.length !== 1 ? 's' : ''}
+                  </div>
                 </div>
               </div>
               
@@ -3031,6 +3134,7 @@ function LeagueManager() {
           </motion.div>
         </motion.div>
       )}
+      </div>
     </div>
   );
 }
