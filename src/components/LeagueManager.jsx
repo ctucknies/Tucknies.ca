@@ -28,6 +28,7 @@ import PlayerStatsModal from './league/PlayerStatsModal';
 import TradeHistorySection from './league/TradeHistorySection';
 import MatchupSection from './league/MatchupSection';
 import PlayerStatsPage from './PlayerStatsPage';
+import TradeFinder from './TradeFinder';
 import { calculatePlacement, calculateWinStreak, calculateAchievements } from './league/utils';
 
 function LeagueManager() {
@@ -79,6 +80,7 @@ function LeagueManager() {
   const [loadingPlayerModal, setLoadingPlayerModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPlayerStatsPage, setShowPlayerStatsPage] = useState(false);
+  const [showTradeFinder, setShowTradeFinder] = useState(false);
 
   // Load saved profile data if user is logged in
   useEffect(() => {
@@ -1232,6 +1234,13 @@ function LeagueManager() {
             >
               <UserIcon className="w-5 h-5" />
               <span className="font-medium">Player Stats</span>
+            </button>
+            <button 
+              onClick={() => setShowTradeFinder(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+            >
+              <ArrowsRightLeftIcon className="w-5 h-5" />
+              <span className="font-medium">Trade Finder</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
               <ChartBarIcon className="w-5 h-5" />
@@ -3095,6 +3104,22 @@ function LeagueManager() {
           <PlayerStatsPage 
             onBack={() => setShowPlayerStatsPage(false)} 
             onShowAuth={() => setShowAuth(true)}
+          />
+        </div>
+      )}
+      
+      {/* Trade Finder - Full Screen Overlay */}
+      {showTradeFinder && (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
+          <TradeFinder 
+            onBack={() => setShowTradeFinder(false)}
+            onShowPlayerStats={(playerId, playerName, season) => {
+              fetchPlayerStats(playerId, playerName, season);
+            }}
+            onShowTeamModal={(teamData) => {
+              setSelectedPlayerData(teamData);
+              setShowPlayerModal(true);
+            }}
           />
         </div>
       )}
