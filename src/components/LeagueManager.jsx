@@ -27,6 +27,7 @@ import SeasonSummary from './league/SeasonSummary';
 import PlayerStatsModal from './league/PlayerStatsModal';
 import TradeHistorySection from './league/TradeHistorySection';
 import MatchupSection from './league/MatchupSection';
+import PlayerStatsPage from './PlayerStatsPage';
 import { calculatePlacement, calculateWinStreak, calculateAchievements } from './league/utils';
 
 function LeagueManager() {
@@ -77,6 +78,7 @@ function LeagueManager() {
   const [selectedPlayerData, setSelectedPlayerData] = useState(null);
   const [loadingPlayerModal, setLoadingPlayerModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showPlayerStatsPage, setShowPlayerStatsPage] = useState(false);
 
   // Load saved profile data if user is logged in
   useEffect(() => {
@@ -1187,6 +1189,8 @@ function LeagueManager() {
     setSelectedPlayerData(null);
   };
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
       {/* Sidebar */}
@@ -1218,6 +1222,16 @@ function LeagueManager() {
             <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
               <HomeIcon className="w-5 h-5" />
               <span className="font-medium">Dashboard</span>
+            </button>
+            <button 
+              onClick={() => {
+                console.log('Player Stats clicked');
+                setShowPlayerStatsPage(true);
+              }}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+            >
+              <UserIcon className="w-5 h-5" />
+              <span className="font-medium">Player Stats</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
               <ChartBarIcon className="w-5 h-5" />
@@ -1277,7 +1291,7 @@ function LeagueManager() {
       </div>
       
       {/* Main Content */}
-      <div className={`max-w-7xl mx-auto p-6 sm:p-8 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className={`max-w-7xl mx-auto p-6 sm:p-8 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'} ${showPlayerStatsPage ? 'hidden' : ''}`}>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -2739,31 +2753,7 @@ function LeagueManager() {
         onSwitchToYear={switchToYear}
       />
 
-      
-      {/* Auth Modal */}
-      {showAuth && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
-          onClick={() => setShowAuth(false)}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={() => setShowAuth(false)}
-              className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full p-2"
-            >
-              ✕
-            </button>
-            <Auth />
-          </motion.div>
-        </motion.div>
-      )}
+
       
       {/* Profile Modal */}
       {showProfile && (
@@ -2900,6 +2890,8 @@ function LeagueManager() {
           </motion.div>
         </motion.div>
       )}
+      
+
       
       {/* Player Modal */}
       {showPlayerModal && (
@@ -3096,6 +3088,41 @@ function LeagueManager() {
         </motion.div>
       )}
       </div>
+      
+      {/* Player Stats Page - Full Screen Overlay */}
+      {showPlayerStatsPage && (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
+          <PlayerStatsPage 
+            onBack={() => setShowPlayerStatsPage(false)} 
+            onShowAuth={() => setShowAuth(true)}
+          />
+        </div>
+      )}
+      
+      {/* Auth Modal - Outside PlayerStatsPage */}
+      {showAuth && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-2 sm:p-4"
+          onClick={() => setShowAuth(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setShowAuth(false)}
+              className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full p-2"
+            >
+              ✕
+            </button>
+            <Auth />
+          </motion.div>
+        </motion.div>
+      )}
     </div>
   );
 }
