@@ -1257,16 +1257,8 @@ function LeagueManager() {
         </div>
       </div>
       
-      {/* Overlay */}
-      {sidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-      
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-6 sm:p-8">
+      <div className={`max-w-7xl mx-auto p-6 sm:p-8 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'}`}>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
