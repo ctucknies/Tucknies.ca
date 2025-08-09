@@ -3123,6 +3123,7 @@ function LeagueManager() {
               fetchPlayerStats(playerId, playerName, season);
             }}
             onShowTeamModal={fetchPlayerModalData}
+            onShowAuth={() => setShowAuth(true)}
           />
         </div>
       )}

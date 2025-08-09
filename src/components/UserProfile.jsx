@@ -60,8 +60,26 @@ function UserProfile({ onClose }) {
   }
 
   const handleSignOut = async () => {
-    await signOut()
-    onClose()
+    try {
+      console.log('Attempting to sign out...')
+      const result = await signOut()
+      console.log('Sign out result:', result)
+      
+      // Force clear local storage on localhost
+      if (window.location.hostname === 'localhost') {
+        localStorage.clear()
+        sessionStorage.clear()
+      }
+      
+      onClose()
+      // Force page reload on localhost to ensure clean state
+      if (window.location.hostname === 'localhost') {
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error('Sign out error:', error)
+      onClose()
+    }
   }
 
   return (

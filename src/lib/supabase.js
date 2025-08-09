@@ -10,7 +10,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        redirectTo: process.env.REACT_APP_SITE_URL || window.location.origin
+        redirectTo: process.env.REACT_APP_SITE_URL || window.location.origin,
+        persistSession: true,
+        detectSessionInUrl: true
       }
     })
   : null

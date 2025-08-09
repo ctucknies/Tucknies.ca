@@ -13,91 +13,8 @@ import { supabase } from '../lib/supabase';
 import Auth from './Auth';
 import PositionPlayersModal from './PositionPlayersModal';
 
-function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
+function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth }) {
   const { user } = useAuth();
-  const [showAuth, setShowAuth] = useState(false);
-
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!user) {
-      setShowAuth(true);
-    }
-  }, [user]);
-
-  // Don't render main content if not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
-        <div className="max-w-7xl mx-auto p-6 sm:p-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="flex items-center gap-4 mb-6">
-              <button
-                onClick={onBack}
-                className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
-              >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-              </button>
-              <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
-                  Trade Finder
-                </h1>
-                <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
-                  Please log in to access the Trade Finder
-                </p>
-              </div>
-            </div>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
-          >
-            <h2 className="text-xl font-bold mb-4">Authentication Required</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              You need to be logged in to use the Trade Finder feature.
-            </p>
-            <button
-              onClick={() => setShowAuth(true)}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-            >
-              Log In
-            </button>
-          </motion.div>
-        </div>
-        
-        {/* Auth Modal */}
-        {showAuth && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-2 sm:p-4"
-            onClick={() => setShowAuth(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="relative"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                onClick={() => setShowAuth(false)}
-                className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full p-2"
-              >
-                ✕
-              </button>
-              <Auth />
-            </motion.div>
-          </motion.div>
-        )}
-      </div>
-    );
-  }
   const [selectedLeague, setSelectedLeague] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [userLeagues, setUserLeagues] = useState([]);
@@ -113,20 +30,8 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
   const [showPositionModal, setShowPositionModal] = useState(false);
   const [selectedPositionData, setSelectedPositionData] = useState(null);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
-  const [positionWeights, setPositionWeights] = useState({ QB: 0.75, RB: 1.0, WR: 0.95, TE: 1.05 });
-  const defaultWeights = { QB: 0.75, RB: 1.0, WR: 0.95, TE: 1.05 };
-
-
-  useEffect(() => {
-    loadAllPlayers();
-    if (user) {
-      loadUserLeagues(selectedYear);
-    }
-  }, [user, selectedYear]);
-
-  useEffect(() => {
-    loadPlayerStats(selectedYear);
-  }, [selectedYear]);
+  const [positionWeights, setPositionWeights] = useState({ QB: 0.625, RB: 1.0, WR: 0.95, TE: 1.05 });
+  const defaultWeights = { QB: 0.625, RB: 1.0, WR: 0.95, TE: 1.05 };
 
   const loadAllPlayers = async () => {
     try {
@@ -176,6 +81,75 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
       setLoadingLeagues(false);
     }
   };
+
+  useEffect(() => {
+    loadAllPlayers();
+    if (user) {
+      loadUserLeagues(selectedYear);
+    }
+  }, [user, selectedYear]);
+
+  useEffect(() => {
+    loadPlayerStats(selectedYear);
+  }, [selectedYear]);
+
+  // Don't render main content if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+        <div className="max-w-7xl mx-auto p-6 sm:p-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={onBack}
+                className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+              >
+                <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </button>
+              <div>
+                <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                  Trade Finder
+                </h1>
+                <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+                  Please log in to access the Trade Finder
+                </p>
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
+          >
+            <h2 className="text-xl font-bold mb-4">Authentication Required</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              You need to be logged in to use the Trade Finder feature.
+            </p>
+            <button
+              onClick={() => {
+                if (onShowAuth) {
+                  onShowAuth();
+                } else {
+                  onBack();
+                }
+              }}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              Go Back to Sign In
+            </button>
+          </motion.div>
+        </div>
+        
+
+      </div>
+    );
+  }
 
   const analyzeLeague = async () => {
     if (!selectedLeague) return;
@@ -591,6 +565,34 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     const team2Value = team2Player.fantasyPoints * getPositionScarcity(pos2);
     const valueDiff = Math.abs(team1Value - team2Value);
     
+    // If value gap is 2+, try to create a 2-for-1 trade instead
+    if (valueDiff >= 2) {
+      const lowerValueTeam = team1Value < team2Value ? team1 : team2;
+      const higherValueTeam = team1Value < team2Value ? team2 : team1;
+      const lowerPos = team1Value < team2Value ? pos1 : pos2;
+      const higherPos = team1Value < team2Value ? pos2 : pos1;
+      
+      // Try to find a second player from lower value team to balance the trade
+      const positions = ['QB', 'RB', 'WR', 'TE'];
+      for (const addPos of positions) {
+        if (addPos === lowerPos) continue;
+        const addPlayers = lowerValueTeam.players[addPos.toLowerCase() + 's'] || [];
+        if (addPlayers.length > 0) {
+          const addPlayer = addPlayers[0];
+          const addValue = addPlayer.fantasyPoints * getPositionScarcity(addPos);
+          const newCombinedValue = (team1Value < team2Value ? team1Value + addValue : team2Value + addValue);
+          const newValueDiff = Math.abs(newCombinedValue - (team1Value < team2Value ? team2Value : team1Value));
+          
+          if (newValueDiff <= 8 && newCombinedValue >= (team1Value < team2Value ? team2Value : team1Value) * 0.8) {
+            return generate2for1Trade(lowerValueTeam, higherValueTeam, [lowerPos, addPos], higherPos);
+          }
+        }
+      }
+    }
+    
+    // Reject trades that are too one-sided (value difference > 6 points for 1-for-1)
+    if (valueDiff > 6) return null;
+    
     // Always put user's team first
     const isTeam1User = team1.teamName === userTeamName;
     return {
@@ -600,7 +602,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
       team1Gives: isTeam1User ? [{ player: team1Player, position: pos1, adjustedValue: team1Value }] : [{ player: team2Player, position: pos2, adjustedValue: team2Value }],
       team2Gives: isTeam1User ? [{ player: team2Player, position: pos2, adjustedValue: team2Value }] : [{ player: team1Player, position: pos1, adjustedValue: team1Value }],
       valueDifference: valueDiff,
-      fairness: 'Fair'
+      fairness: valueDiff <= 1 ? 'Fair' : valueDiff <= 1.5 ? 'Good' : 'Moderate'
     };
   };
 
@@ -625,6 +627,13 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
                        (player2.fantasyPoints * getPositionScarcity(givingPositions[1]));
     const receivingValue = receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition);
     const valueDiff = Math.abs(givingValue - receivingValue);
+    
+    // Reject trades that are too one-sided (value difference > 8 points)
+    if (valueDiff > 8) return null;
+    
+    // For 2-for-1 trades, the single player should be significantly better
+    // The receiving player should be worth at least 80% of the combined giving value
+    if (receivingValue < givingValue * 0.8) return null;
 
     // Always put user's team first
     const isGivingUser = givingTeam.teamName === userTeamName;
@@ -641,7 +650,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
         { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
       ],
       valueDifference: valueDiff,
-      fairness: valueDiff <= 1 ? 'Fair' : valueDiff <= 4 ? 'Good' : 'Moderate'
+      fairness: valueDiff <= 2 ? 'Fair' : valueDiff <= 5 ? 'Good' : 'Moderate'
     };
   };
 
@@ -763,63 +772,13 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
           )}
         </motion.div>
 
-        {Object.keys(teamStrengths).length > 0 && (
+        {/* Trade Matches Section - Now appears first */}
+        {tradeMatches.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg"
-          >
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <ChartBarIcon className="w-5 h-5" />
-              Team Strengths Analysis
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.values(teamStrengths).map(team => (
-                <div key={team.rosterId} className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-800 dark:via-gray-700 dark:to-blue-900/20 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300">
-                  <button
-                    onClick={() => handleTeamClick(team.teamName)}
-                    className="text-lg font-bold mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent"
-                  >
-                    {team.teamName}
-                  </button>
-                  <div className="space-y-3">
-                    {['QB', 'RB', 'WR', 'TE'].map(pos => (
-                      <button
-                        key={pos}
-                        onClick={() => handlePositionClick(team, pos)}
-                        className="w-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/30 dark:border-gray-600/30 hover:bg-white/80 dark:hover:bg-gray-700/80 hover:shadow-md transition-all duration-200"
-                      >
-                        <div className="flex justify-between items-center">
-                          <span className="font-semibold text-gray-800 dark:text-gray-200">
-                            {pos}s
-                          </span>
-                          <div className="flex items-center gap-3">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">{team[pos].toFixed(1)}</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
-                              team[`${pos}_status`] === 'surplus' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
-                              team[`${pos}_status`] === 'deficit' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' :
-                              'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
-                            }`}>
-                              {team[`${pos}_status`]}
-                            </span>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {tradeMatches.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg"
           >
             <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
               <ArrowsRightLeftIcon className="w-5 h-5" />
@@ -912,17 +871,81 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
           </motion.div>
         )}
 
-        {tradeMatches.length === 0 && Object.keys(teamStrengths).length > 0 && (
+        {/* No Trades Found Message - Also appears before team analysis */}
+        {Object.keys(teamStrengths).length > 0 && tradeMatches.length === 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg text-center"
+          >
+            <h2 className="text-xl font-bold mb-2 flex items-center justify-center gap-2">
+              <ArrowsRightLeftIcon className="w-5 h-5" />
+              No Trade Matches Found
+            </h2>
+            <p className="text-gray-500 mb-4">
+              No complementary surplus/deficit matches were found in this league.
+            </p>
+            <p className="text-sm text-gray-400">
+              Try adjusting the <button 
+                onClick={() => setShowAdvancedOptions(true)}
+                className="text-blue-500 hover:text-blue-600 underline"
+              >
+                Advanced Options
+              </button> position weights to find more trade opportunities.
+            </p>
+          </motion.div>
+        )}
+
+        {/* Team Strengths Analysis - Now appears after trades */}
+        {Object.keys(teamStrengths).length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg text-center"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg"
           >
-            <h2 className="text-xl font-bold mb-2">No Trade Matches Found</h2>
-            <p className="text-gray-500">
-              No complementary surplus/deficit matches were found in this league.
-            </p>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <ChartBarIcon className="w-5 h-5" />
+              Team Strengths Analysis
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Object.values(teamStrengths).map(team => (
+                <div key={team.rosterId} className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-800 dark:via-gray-700 dark:to-blue-900/20 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                  <button
+                    onClick={() => handleTeamClick(team.teamName)}
+                    className="text-lg font-bold mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent"
+                  >
+                    {team.teamName}
+                  </button>
+                  <div className="space-y-3">
+                    {['QB', 'RB', 'WR', 'TE'].map(pos => (
+                      <button
+                        key={pos}
+                        onClick={() => handlePositionClick(team, pos)}
+                        className="w-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/30 dark:border-gray-600/30 hover:bg-white/80 dark:hover:bg-gray-700/80 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-800 dark:text-gray-200">
+                            {pos}s
+                          </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">{team[pos].toFixed(1)}</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                              team[`${pos}_status`] === 'surplus' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
+                              team[`${pos}_status`] === 'deficit' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' :
+                              'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
+                            }`}>
+                              {team[`${pos}_status`]}
+                            </span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </motion.div>
         )}
       </div>

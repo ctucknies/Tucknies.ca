@@ -10,12 +10,34 @@ const PlayerStatsModal = ({
   setPlayerStatsTab,
   allYearStats,
   onClose,
-  onSwitchToYear 
+  onSwitchToYear,
+  leagueData 
 }) => {
   const [weeklyStats, setWeeklyStats] = useState(null);
   const [loadingWeekly, setLoadingWeekly] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(null);
   const [weeklyCache, setWeeklyCache] = useState({});
+
+  const getLeagueScoring = (league) => {
+    if (!league?.scoring_settings) return 'pts_ppr'; // default
+    
+    const rec = league.scoring_settings.rec || 0;
+    if (rec === 1) return 'pts_ppr';
+    if (rec === 0.5) return 'pts_half_ppr';
+    return 'pts_std';
+  };
+
+  const getFantasyPoints = (stats, league = null) => {
+    if (!stats) return 0;
+    
+    if (league) {
+      const scoringType = getLeagueScoring(league);
+      return stats[scoringType] || 0;
+    }
+    
+    // Fallback to PPR if no league specified
+    return stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
+  };
 
   const fetchWeeklyStats = async (playerId, year) => {
     const cacheKey = `${playerId}-${year}`;
@@ -36,7 +58,7 @@ const PlayerStatsModal = ({
           const playerWeekStats = weekStats[playerId] || {};
           weeklyData.push({
             week,
-            points: playerWeekStats.pts_ppr || playerWeekStats.pts_std || playerWeekStats.pts_half_ppr || 0,
+            points: getFantasyPoints(playerWeekStats, leagueData),
             stats: playerWeekStats
           });
         } catch (err) {
@@ -200,8 +222,13 @@ const PlayerStatsModal = ({
                   {/* Fantasy Points */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-green-600">{(playerStatsData.stats.pts_ppr || 0).toFixed(1)}</div>
-                      <div className="text-sm text-gray-500">PPR Points</div>
+                      <div className="text-2xl font-bold text-green-600">{getFantasyPoints(playerStatsData.stats, leagueData).toFixed(1)}</div>
+                      <div className="text-sm text-gray-500">
+                        {leagueData ? (
+                          getLeagueScoring(leagueData) === 'pts_ppr' ? 'PPR Points' :
+                          getLeagueScoring(leagueData) === 'pts_half_ppr' ? 'Half-PPR Points' : 'Standard Points'
+                        ) : 'Fantasy Points'}
+                      </div>
                     </div>
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg text-center">
                       <div className="text-2xl font-bold text-blue-600">{(playerStatsData.stats.pts_std || 0).toFixed(1)}</div>
@@ -209,7 +236,7 @@ const PlayerStatsModal = ({
                     </div>
                     <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg text-center">
                       <div className="text-2xl font-bold text-purple-600">{playerStatsData.derivedStats.fantasy_ppg || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">PPR Per Game</div>
+                      <div className="text-sm text-gray-500">Per Game</div>
                     </div>
                   </div>
 

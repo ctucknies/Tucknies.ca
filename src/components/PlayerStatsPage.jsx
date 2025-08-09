@@ -7,9 +7,7 @@ import {
   UserIcon,
   ArrowLeftIcon,
   StarIcon,
-  TrophyIcon,
-  FireIcon,
-  BoltIcon
+
 } from '@heroicons/react/24/outline';
 import { secureApiCall } from '../utils/security';
 import PlayerStatsModal from './league/PlayerStatsModal';
@@ -43,8 +41,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
-  const [topPerformers, setTopPerformers] = useState(null);
-  const [loadingTopPerformers, setLoadingTopPerformers] = useState(false);
+
   const [showPlayerStats, setShowPlayerStats] = useState(false);
   const [playerStatsData, setPlayerStatsData] = useState(null);
   const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
@@ -65,7 +62,6 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
 
   useEffect(() => {
     loadAllPlayers();
-    loadTopPerformers();
     loadPlayerStats();
     if (user) {
       loadUserProfile();
@@ -153,41 +149,27 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
     }
   };
 
-  const loadTopPerformers = async () => {
-    setLoadingTopPerformers(true);
-    try {
-      const currentYear = new Date().getFullYear();
-      const response = await secureApiCall(`https://api.sleeper.app/v1/stats/nfl/regular/${currentYear}`);
-      const stats = await response.json();
-      
-      if (allPlayers) {
-        const playersWithStats = Object.entries(stats)
-          .map(([id, playerStats]) => ({
-            id,
-            ...allPlayers[id],
-            stats: playerStats,
-            fantasyPoints: playerStats.pts_ppr || playerStats.pts_std || 0
-          }))
-          .filter(p => p.position && positions.includes(p.position) && p.fantasyPoints > 0)
-          .sort((a, b) => b.fantasyPoints - a.fantasyPoints);
 
-        const topByPosition = {};
-        positions.forEach(pos => {
-          topByPosition[pos] = playersWithStats
-            .filter(p => p.position === pos)
-            .slice(0, 5);
-        });
 
-        setTopPerformers({
-          overall: playersWithStats.slice(0, 20),
-          byPosition: topByPosition
-        });
-      }
-    } catch (err) {
-      console.error('Error loading top performers:', err);
-    } finally {
-      setLoadingTopPerformers(false);
+  const getLeagueScoring = (league) => {
+    if (!league?.scoring_settings) return 'pts_ppr'; // default
+    
+    const rec = league.scoring_settings.rec || 0;
+    if (rec === 1) return 'pts_ppr';
+    if (rec === 0.5) return 'pts_half_ppr';
+    return 'pts_std';
+  };
+
+  const getFantasyPoints = (stats, league = null) => {
+    if (!stats) return 0;
+    
+    if (league) {
+      const scoringType = getLeagueScoring(league);
+      return stats[scoringType] || 0;
     }
+    
+    // Fallback to PPR if no league specified
+    return stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
   };
 
   const searchLeaguePlayers = async () => {
@@ -238,7 +220,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
         })
         .map(([id, player]) => {
           const stats = playerStats[id] || {};
-          const fantasyPoints = stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
+          const fantasyPoints = getFantasyPoints(stats, league);
           const gamesPlayed = stats.gp || 0;
           const ppg = gamesPlayed > 0 ? (fantasyPoints / gamesPlayed) : 0;
           const isRostered = takenPlayerIds.has(id);
@@ -315,7 +297,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
         })
         .map(([id, player]) => {
           const stats = playerStats[id] || {};
-          const fantasyPoints = stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
+          const fantasyPoints = getFantasyPoints(stats);
           const gamesPlayed = stats.gp || 0;
           const ppg = gamesPlayed > 0 ? (fantasyPoints / gamesPlayed) : 0;
           
@@ -390,7 +372,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
                 .map(([id, stats]) => ({
                   id,
                   position: allPlayers[id]?.position,
-                  fantasyPoints: stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0
+                  fantasyPoints: getFantasyPoints(stats)
                 }))
                 .filter(p => p.fantasyPoints > 0)
                 .sort((a, b) => b.fantasyPoints - a.fantasyPoints);
@@ -585,65 +567,63 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
                 animate={{ opacity: 1, height: 'auto' }}
                 className="grid grid-cols-1 md:grid-cols-6 gap-4 pt-4 border-t border-gray-200 dark:border-gray-600"
               >
-                <div>
-                  <label className="block text-sm font-medium mb-2">Year</label>
-                  {user ? (
-                    <select
-                      value={selectedYear}
-                      onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                      className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700"
-                    >
-                      {[2025, 2024, 2023, 2022, 2021, 2020].map(year => (
-                        <option key={year} value={year}>{year}</option>
-                      ))}
-                    </select>
-                  ) : (
-                    <div className="p-2 bg-gray-100 dark:bg-gray-600 rounded-lg text-gray-500 dark:text-gray-400 text-sm">
-                      Sign in required
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">Your Leagues</label>
-                  {user ? (
-                    <div className="space-y-2">
+                {user ? (
+                  <>
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Year</label>
                       <select
-                        value={tempFilters.league}
-                        onChange={(e) => {
-                          const newValue = e.target.value;
-                          setTempFilters(prev => ({ ...prev, league: newValue }));
-                          setFilters(prev => ({ ...prev, league: newValue }));
-                        }}
+                        value={selectedYear}
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
                         className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700"
-                        disabled={loadingUserLeagues}
                       >
-                        <option value="">Select a league...</option>
-                        {userLeagues.map(league => (
-                          <option key={league.id} value={league.id}>
-                            {league.name} ({league.season})
-                          </option>
+                        {[2025, 2024, 2023, 2022, 2021, 2020].map(year => (
+                          <option key={year} value={year}>{year}</option>
                         ))}
                       </select>
-                      {userLeagues.length === 0 && !loadingUserLeagues && (
-                        <button
-                          onClick={() => syncUserLeagues()}
-                          className="w-full text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
-                        >
-                          Sync Leagues
-                        </button>
-                      )}
-                      {loadingUserLeagues && (
-                        <div className="text-sm text-gray-500 flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                          Loading leagues...
-                        </div>
-                      )}
                     </div>
-                  ) : (
-                    <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Your Leagues</label>
+                      <div className="space-y-2">
+                        <select
+                          value={tempFilters.league}
+                          onChange={(e) => {
+                            const newValue = e.target.value;
+                            setTempFilters(prev => ({ ...prev, league: newValue }));
+                            setFilters(prev => ({ ...prev, league: newValue }));
+                          }}
+                          className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700"
+                          disabled={loadingUserLeagues}
+                        >
+                          <option value="">Select a league...</option>
+                          {userLeagues.map(league => (
+                            <option key={league.id} value={league.id}>
+                              {league.name} ({league.season})
+                            </option>
+                          ))}
+                        </select>
+                        {userLeagues.length === 0 && !loadingUserLeagues && (
+                          <button
+                            onClick={() => syncUserLeagues()}
+                            className="w-full text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition-colors"
+                          >
+                            Sync Leagues
+                          </button>
+                        )}
+                        {loadingUserLeagues && (
+                          <div className="text-sm text-gray-500 flex items-center gap-2">
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            Loading leagues...
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="col-span-2">
+                    <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
                       <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-2">
-                        Sign in to sync your leagues
+                        Please sign in to sync leagues and access year selection
                       </p>
                       <button
                         onClick={onShowAuth}
@@ -652,8 +632,8 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
                         Sign In
                       </button>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
                 
                 <div>
                   <label className="block text-sm font-medium mb-2">Position</label>
@@ -729,98 +709,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
           </div>
         </motion.div>
 
-        {!searchQuery && topPerformers && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-8"
-          >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl flex items-center justify-center">
-                <TrophyIcon className="w-5 h-5 text-white" />
-              </div>
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Top Performers ({new Date().getFullYear()})
-              </h2>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <FireIcon className="w-5 h-5 text-orange-500" />
-                  Overall Leaders
-                </h3>
-                <div className="space-y-2">
-                  {topPerformers.overall.slice(0, 10).map((player, index) => (
-                    <div
-                      key={player.id}
-                      className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                      onClick={() => fetchPlayerStats(player.id, player.full_name, new Date().getFullYear())}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                          index === 0 ? 'bg-yellow-500 text-white' :
-                          index === 1 ? 'bg-gray-400 text-white' :
-                          index === 2 ? 'bg-orange-600 text-white' :
-                          'bg-gray-200 text-gray-700'
-                        }`}>
-                          {index + 1}
-                        </div>
-                        <span className={`px-2 py-1 rounded text-xs font-bold ${getPositionColor(player.position)}`}>
-                          {player.position}
-                        </span>
-                        <div>
-                          <div className="font-medium">{player.full_name}</div>
-                          <div className="text-sm text-gray-500">{player.team}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold text-green-600">{player.fantasyPoints.toFixed(1)}</div>
-                        <div className="text-xs text-gray-500">fantasy pts</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <BoltIcon className="w-5 h-5 text-blue-500" />
-                  Position Leaders
-                </h3>
-                <div className="space-y-4">
-                  {positions.map(position => {
-                    const topPlayer = topPerformers.byPosition[position]?.[0];
-                    if (!topPlayer) return null;
-                    
-                    return (
-                      <div
-                        key={position}
-                        className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors cursor-pointer"
-                        onClick={() => fetchPlayerStats(topPlayer.id, topPlayer.full_name, new Date().getFullYear())}
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${getPositionColor(position)}`}>
-                            {position}
-                          </span>
-                          <div>
-                            <div className="font-medium">{topPlayer.full_name}</div>
-                            <div className="text-sm text-gray-500">{topPlayer.team}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold text-green-600">{topPlayer.fantasyPoints.toFixed(1)}</div>
-                          <div className="text-xs text-gray-500">fantasy pts</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        )}
 
         {filters.league && (
           <motion.div
@@ -885,7 +774,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
                       </div>
                       
                       <div
-                        onClick={() => fetchPlayerStats(player.id, player.name, new Date().getFullYear())}
+                        onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
                         className="cursor-pointer"
                       >
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
@@ -987,7 +876,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
                       </div>
                       
                       <div
-                        onClick={() => fetchPlayerStats(player.id, player.name, new Date().getFullYear())}
+                        onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
                         className="cursor-pointer"
                       >
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
@@ -1037,6 +926,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
           allYearStats={allYearStats}
           onClose={closePlayerStats}
           onSwitchToYear={switchToYear}
+          leagueData={leagueData}
         />
 
         <PlayerComparisonModal
