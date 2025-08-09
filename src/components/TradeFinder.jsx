@@ -11,6 +11,7 @@ import { secureApiCall } from '../utils/security';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import Auth from './Auth';
+import PositionPlayersModal from './PositionPlayersModal';
 
 function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
   const { user } = useAuth();
@@ -109,6 +110,8 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
   const [loading, setLoading] = useState(false);
   const [teamStrengths, setTeamStrengths] = useState({});
   const [userTeamName, setUserTeamName] = useState('');
+  const [showPositionModal, setShowPositionModal] = useState(false);
+  const [selectedPositionData, setSelectedPositionData] = useState(null);
 
 
   useEffect(() => {
@@ -309,7 +312,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
         }
 
         const positions = ['QB', 'RB', 'WR', 'TE'];
-        const positionScarcity = { QB: 1.1, RB: 1.0, WR: 0.9, TE: 0.85 };
+        const positionScarcity = { QB: .9, RB: 1.0, WR: 0.9, TE: 1.05 };
         
         // 1-for-1 trades - ensure at least one surplus involved
         for (const pos1 of positions) {
@@ -420,20 +423,58 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     }
   };
 
-  const handleTeamClick = (teamName) => {
+  const handleTeamClick = async (teamName) => {
     const team = Object.values(teamStrengths).find(t => t.teamName === teamName);
-    if (team && onShowTeamModal) {
-      const teamData = {
-        ...team,
-        season: selectedYear,
-        rosterWithStats: [...(team.players.qbs || []), ...(team.players.rbs || []), ...(team.players.wrs || []), ...(team.players.tes || [])]
-      };
-      onShowTeamModal(teamData);
+    if (team && onShowTeamModal && selectedLeague) {
+      try {
+        const usersResponse = await secureApiCall(`https://api.sleeper.app/v1/league/${selectedLeague}/users`);
+        const users = await usersResponse.json();
+        const rostersResponse = await secureApiCall(`https://api.sleeper.app/v1/league/${selectedLeague}/rosters`);
+        const rosters = await rostersResponse.json();
+        
+        const roster = rosters.find(r => r.roster_id === team.rosterId);
+        const user = users.find(u => u.user_id === roster?.owner_id);
+        
+        if (user) {
+          const actualUsername = user.display_name || user.username;
+          onShowTeamModal(actualUsername, selectedLeague, selectedYear);
+        }
+      } catch (err) {
+        console.error('Error fetching team data:', err);
+      }
     }
   };
 
+  const handlePositionClick = (team, position) => {
+    const positionPlayers = team.players[position.toLowerCase() + 's'] || [];
+    
+    // Calculate score explanation based on position
+    let scoreCalculation = '';
+    if (position === 'QB' || position === 'TE') {
+      scoreCalculation = `Score based on top ${position} player's average fantasy points per game.`;
+    } else if (position === 'RB') {
+      scoreCalculation = 'Score based on average fantasy points of top 3 RB players per game.';
+    } else if (position === 'WR') {
+      scoreCalculation = 'Score based on average fantasy points of top 4 WR players per game.';
+    }
+    
+    setSelectedPositionData({
+      position,
+      players: positionPlayers,
+      teamName: team.teamName,
+      positionScore: team[position],
+      scoreCalculation
+    });
+    setShowPositionModal(true);
+  };
+
+  const closePositionModal = () => {
+    setShowPositionModal(false);
+    setSelectedPositionData(null);
+  };
+
   const getPositionScarcity = (position) => {
-    const scarcity = { QB: 0.8075, RB: 1.0, WR: 0.9, TE: 0.85 };
+    const scarcity = { QB: 0.75, RB: 1.0, WR: 0.95, TE: 1.05 };
     return scarcity[position] || 1.0;
   };
 
@@ -453,12 +494,14 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     // Only suggest if within 2 pts/wk after scarcity adjustment
     if (valueDiff > 2) return null;
 
+    // Always put user's team first
+    const isTeam1User = team1.teamName === userTeamName;
     return {
       type: '1-for-1',
-      team1: team1.teamName,
-      team2: team2.teamName,
-      team1Gives: [{ player: team1Player, position: pos1, adjustedValue: team1Value }],
-      team2Gives: [{ player: team2Player, position: pos2, adjustedValue: team2Value }],
+      team1: isTeam1User ? team1.teamName : team2.teamName,
+      team2: isTeam1User ? team2.teamName : team1.teamName,
+      team1Gives: isTeam1User ? [{ player: team1Player, position: pos1, adjustedValue: team1Value }] : [{ player: team2Player, position: pos2, adjustedValue: team2Value }],
+      team2Gives: isTeam1User ? [{ player: team2Player, position: pos2, adjustedValue: team2Value }] : [{ player: team1Player, position: pos1, adjustedValue: team1Value }],
       valueDifference: valueDiff,
       fairness: 'Fair'
     };
@@ -490,15 +533,20 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
     const isGivingFair = (receivingValue - givingValue) >= 4 || (givingValue - receivingValue) <= 1;
     if (!isGivingFair) return null;
 
+    // Always put user's team first
+    const isGivingUser = givingTeam.teamName === userTeamName;
     return {
       type: '2-for-1',
-      team1: givingTeam.teamName,
-      team2: receivingTeam.teamName,
-      team1Gives: [
+      team1: isGivingUser ? givingTeam.teamName : receivingTeam.teamName,
+      team2: isGivingUser ? receivingTeam.teamName : givingTeam.teamName,
+      team1Gives: isGivingUser ? [
+        { player: player1, position: givingPositions[0], adjustedValue: player1.fantasyPoints * getPositionScarcity(givingPositions[0]) },
+        { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
+      ] : [{ player: receivingPlayer, position: receivingPosition, adjustedValue: receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition) }],
+      team2Gives: isGivingUser ? [{ player: receivingPlayer, position: receivingPosition, adjustedValue: receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition) }] : [
         { player: player1, position: givingPositions[0], adjustedValue: player1.fantasyPoints * getPositionScarcity(givingPositions[0]) },
         { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
       ],
-      team2Gives: [{ player: receivingPlayer, position: receivingPosition, adjustedValue: receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition) }],
       valueDifference: valueDiff,
       rosterSpotValue,
       fairness: valueDiff <= 1 ? 'Fair' : valueDiff <= 4 ? 'Good' : 'Moderate'
@@ -596,30 +644,38 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
               <ChartBarIcon className="w-5 h-5" />
               Team Strengths Analysis
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {Object.values(teamStrengths).map(team => (
-                <div key={team.rosterId} className="p-4 border rounded-lg">
+                <div key={team.rosterId} className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-800 dark:via-gray-700 dark:to-blue-900/20 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300">
                   <button
                     onClick={() => handleTeamClick(team.teamName)}
-                    className="font-semibold mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                    className="text-lg font-bold mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent"
                   >
                     {team.teamName}
                   </button>
-                  <div className="space-y-1 text-sm">
+                  <div className="space-y-3">
                     {['QB', 'RB', 'WR', 'TE'].map(pos => (
-                      <div key={pos} className="flex justify-between items-center">
-                        <span>{pos}:</span>
-                        <div className="flex items-center gap-2">
-                          <span>{team[pos].toFixed(1)}</span>
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            team[`${pos}_status`] === 'surplus' ? 'bg-green-100 text-green-800' :
-                            team[`${pos}_status`] === 'deficit' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {team[`${pos}_status`]}
+                      <button
+                        key={pos}
+                        onClick={() => handlePositionClick(team, pos)}
+                        className="w-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/30 dark:border-gray-600/30 hover:bg-white/80 dark:hover:bg-gray-700/80 hover:shadow-md transition-all duration-200"
+                      >
+                        <div className="flex justify-between items-center">
+                          <span className="font-semibold text-gray-800 dark:text-gray-200">
+                            {pos}s
                           </span>
+                          <div className="flex items-center gap-3">
+                            <span className="text-lg font-bold text-gray-900 dark:text-white">{team[pos].toFixed(1)}</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                              team[`${pos}_status`] === 'surplus' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
+                              team[`${pos}_status`] === 'deficit' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' :
+                              'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
+                            }`}>
+                              {team[`${pos}_status`]}
+                            </span>
+                          </div>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -641,9 +697,9 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
             </h2>
             <div className="space-y-4">
               {tradeMatches.map((trade, index) => (
-                <div key={index} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-4">
+                <div key={index} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
                       <button 
                         onClick={() => handleTeamClick(trade.team1)}
                         className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -657,82 +713,69 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
                       >
                         {trade.team2}
                       </button>
-                      <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
                         {trade.type}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {trade.fairness === 'Fair' && <CheckCircleIcon className="w-4 h-4 text-green-500" />}
-                      {trade.fairness === 'Moderate' && <ExclamationTriangleIcon className="w-4 h-4 text-yellow-500" />}
-                      {trade.fairness === 'Unbalanced' && <ExclamationTriangleIcon className="w-4 h-4 text-red-500" />}
-                      <span className={`text-sm px-2 py-1 rounded ${
-                        trade.fairness === 'Fair' ? 'bg-green-100 text-green-800' :
-                        trade.fairness === 'Moderate' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {trade.fairness}
-                      </span>
-                    </div>
+                    <span className={`text-xs px-2 py-1 rounded font-medium ${
+                      trade.fairness === 'Fair' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                      trade.fairness === 'Moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    }`}>
+                      {trade.fairness}
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="font-medium">{trade.team1} gives:</span>
-                      <div className="mt-1 space-y-1">
+                      <div className="font-medium text-red-600 dark:text-red-400 mb-2">{trade.team1} gives:</div>
+                      <div className="space-y-1">
                         {trade.team1Gives.map((give, idx) => (
-                          <div key={idx}>
-                            <button
-                              onClick={() => handlePlayerClick(give.player)}
-                              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
-                            >
-                              {give.player.full_name}
-                            </button>
-                            <span className="text-gray-600 ml-1">({give.position})</span>
-                            <div className="text-gray-500">
-                              {give.player.fantasyPoints.toFixed(1)} pts/wk
+                          <div key={idx} className="flex justify-between items-center">
+                            <div>
+                              <button
+                                onClick={() => handlePlayerClick(give.player)}
+                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                              >
+                                {give.player.full_name}
+                              </button>
+                              <span className="text-gray-500 ml-1">({give.position})</span>
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {give.player.fantasyPoints.toFixed(1)} pts
                               {give.adjustedValue && (
-                                <span className="text-blue-600 ml-1">({give.adjustedValue.toFixed(1)} adj)</span>
+                                <div className="text-blue-600 dark:text-blue-400">({give.adjustedValue.toFixed(1)} adj)</div>
                               )}
                             </div>
                           </div>
                         ))}
-                        {trade.team1Gives.length > 1 && (
-                          <div className="text-xs text-blue-600 font-medium">
-                            Total: {trade.team1Gives.reduce((sum, g) => sum + g.player.fantasyPoints, 0).toFixed(1)} pts/wk
-                          </div>
-                        )}
                       </div>
                     </div>
                     <div>
-                      <span className="font-medium">{trade.team2} gives:</span>
-                      <div className="mt-1 space-y-1">
+                      <div className="font-medium text-green-600 dark:text-green-400 mb-2">{trade.team2} gives:</div>
+                      <div className="space-y-1">
                         {trade.team2Gives.map((give, idx) => (
-                          <div key={idx}>
-                            <button
-                              onClick={() => handlePlayerClick(give.player)}
-                              className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
-                            >
-                              {give.player.full_name}
-                            </button>
-                            <span className="text-gray-600 ml-1">({give.position})</span>
-                            <div className="text-gray-500">
-                              {give.player.fantasyPoints.toFixed(1)} pts/wk
+                          <div key={idx} className="flex justify-between items-center">
+                            <div>
+                              <button
+                                onClick={() => handlePlayerClick(give.player)}
+                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
+                              >
+                                {give.player.full_name}
+                              </button>
+                              <span className="text-gray-500 ml-1">({give.position})</span>
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {give.player.fantasyPoints.toFixed(1)} pts
                               {give.adjustedValue && (
-                                <span className="text-blue-600 ml-1">({give.adjustedValue.toFixed(1)} adj)</span>
+                                <div className="text-blue-600 dark:text-blue-400">({give.adjustedValue.toFixed(1)} adj)</div>
                               )}
                             </div>
                           </div>
                         ))}
-                        {trade.type === '2-for-1' && (
-                          <div className="text-xs text-orange-600">
-                            Roster spot value: -{trade.rosterSpotValue.toFixed(1)} pts/wk
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="mt-2 text-xs text-gray-500">
-                    Value difference: {trade.valueDifference.toFixed(1)} pts/wk
-                  </div>
+
                 </div>
               ))}
             </div>
@@ -754,7 +797,17 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal }) {
         )}
       </div>
 
-
+      {/* Position Players Modal */}
+      <PositionPlayersModal
+        isOpen={showPositionModal}
+        onClose={closePositionModal}
+        position={selectedPositionData?.position}
+        players={selectedPositionData?.players || []}
+        teamName={selectedPositionData?.teamName}
+        onPlayerClick={handlePlayerClick}
+        positionScore={selectedPositionData?.positionScore || 0}
+        scoreCalculation={selectedPositionData?.scoreCalculation}
+      />
     </div>
   );
 }
