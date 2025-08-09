@@ -273,10 +273,27 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
 
   const findTradeMatches = (strengths, rosters) => {
     const matches = [];
+    const seenTrades = new Set();
     const teams = Object.values(strengths);
     
     // Only show trades involving the user's team
     if (!userTeamName) return matches;
+
+    const createTradeSignature = (trade) => {
+      const team1Players = trade.team1Gives.map(g => g.player.id).sort().join(',');
+      const team2Players = trade.team2Gives.map(g => g.player.id).sort().join(',');
+      return `${trade.team1}-${trade.team2}-${team1Players}-${team2Players}`;
+    };
+
+    const addTradeIfUnique = (trade) => {
+      if (trade) {
+        const signature = createTradeSignature(trade);
+        if (!seenTrades.has(signature)) {
+          seenTrades.add(signature);
+          matches.push(trade);
+        }
+      }
+    };
 
     for (let i = 0; i < teams.length; i++) {
       for (let j = i + 1; j < teams.length; j++) {
@@ -304,9 +321,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
                 team1[`${pos2}_status`] === 'surplus') {
               
               const trade = generate1for1Trade(team1, team2, pos1, pos2);
-              if (trade) {
-                matches.push(trade);
-              }
+              addTradeIfUnique(trade);
             }
             
             // Team1 surplus -> Team2 deficit/balanced (direct position)
@@ -314,9 +329,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
                 (team2[`${pos1}_status`] === 'deficit' || team2[`${pos1}_status`] === 'balanced')) {
               
               const trade = generate1for1Trade(team1, team2, pos1, pos2);
-              if (trade) {
-                matches.push(trade);
-              }
+              addTradeIfUnique(trade);
             }
           }
         }
@@ -330,9 +343,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
                   (team2[`${pos3}_status`] === 'surplus' || team2[`${pos3}_status`] === 'balanced')) {
                 
                 const trade = generate2for1Trade(team1, team2, [pos1, pos2], pos3);
-                if (trade) {
-                  matches.push(trade);
-                }
+                addTradeIfUnique(trade);
               }
               
               // Team2 gives 2 surplus, Team1 gives 1 surplus/balanced
@@ -340,8 +351,35 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
                   (team1[`${pos3}_status`] === 'surplus' || team1[`${pos3}_status`] === 'balanced')) {
                 
                 const trade = generate2for1Trade(team2, team1, [pos1, pos2], pos3);
-                if (trade) {
-                  matches.push(trade);
+                addTradeIfUnique(trade);
+              }
+            }
+          }
+        }
+
+        // 3-for-2 trades
+        for (const pos1 of positions) {
+          for (const pos2 of positions) {
+            for (const pos3 of positions) {
+              for (const pos4 of positions) {
+                for (const pos5 of positions) {
+                  // Team1 gives 3, Team2 gives 2
+                  if (team1[`${pos1}_status`] === 'surplus' && team1[`${pos2}_status`] === 'surplus' &&
+                      (team2[`${pos4}_status`] === 'surplus' || team2[`${pos4}_status`] === 'balanced') &&
+                      (team2[`${pos5}_status`] === 'surplus' || team2[`${pos5}_status`] === 'balanced')) {
+                    
+                    const trade = generate3for2Trade(team1, team2, [pos1, pos2, pos3], [pos4, pos5]);
+                    addTradeIfUnique(trade);
+                  }
+                  
+                  // Team2 gives 3, Team1 gives 2
+                  if (team2[`${pos1}_status`] === 'surplus' && team2[`${pos2}_status`] === 'surplus' &&
+                      (team1[`${pos4}_status`] === 'surplus' || team1[`${pos4}_status`] === 'balanced') &&
+                      (team1[`${pos5}_status`] === 'surplus' || team1[`${pos5}_status`] === 'balanced')) {
+                    
+                    const trade = generate3for2Trade(team2, team1, [pos1, pos2, pos3], [pos4, pos5]);
+                    addTradeIfUnique(trade);
+                  }
                 }
               }
             }
@@ -588,6 +626,20 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
           }
         }
       }
+      
+      // If 2-for-1 didn't work, try 3-for-2
+      for (const addPos1 of positions) {
+        for (const addPos2 of positions) {
+          const addPlayers1 = lowerValueTeam.players[addPos1.toLowerCase() + 's'] || [];
+          const addPlayers2 = higherValueTeam.players[addPos2.toLowerCase() + 's'] || [];
+          if (addPlayers1.length > 0 && addPlayers2.length > 0) {
+            const trade = generate3for2Trade(lowerValueTeam, higherValueTeam, [lowerPos, addPos1, addPos1], [higherPos, addPos2]);
+            if (trade) {
+              return trade;
+            }
+          }
+        }
+      }
     }
     
     // Reject trades that are too one-sided (value difference > 6 points for 1-for-1)
@@ -607,12 +659,21 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
   };
 
   const generate2for1Trade = (givingTeam, receivingTeam, givingPositions, receivingPosition) => {
-    const player1 = givingTeam.players[givingPositions[0].toLowerCase() + 's']?.[0];
-    const player2 = givingTeam.players[givingPositions[1].toLowerCase() + 's']?.[1] || 
-                   givingTeam.players[givingPositions[1].toLowerCase() + 's']?.[0];
-    const receivingPlayer = receivingTeam.players[receivingPosition.toLowerCase() + 's']?.[0];
+    const usedPlayerIds = new Set();
     
-    if (!player1 || !player2 || !receivingPlayer) return null;
+    const player1 = givingTeam.players[givingPositions[0].toLowerCase() + 's']?.[0];
+    if (!player1) return null;
+    usedPlayerIds.add(player1.id);
+    
+    const pos2Players = givingTeam.players[givingPositions[1].toLowerCase() + 's'] || [];
+    const player2 = pos2Players.find(p => !usedPlayerIds.has(p.id));
+    if (!player2) return null;
+    usedPlayerIds.add(player2.id);
+    
+    const receivingPlayers = receivingTeam.players[receivingPosition.toLowerCase() + 's'] || [];
+    const receivingPlayer = receivingPlayers.find(p => !usedPlayerIds.has(p.id));
+    if (!receivingPlayer) return null;
+
 
     const givingTeamGives = [
       { player: player1, position: givingPositions[0] },
@@ -651,6 +712,68 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
       ],
       valueDifference: valueDiff,
       fairness: valueDiff <= 2 ? 'Fair' : valueDiff <= 5 ? 'Good' : 'Moderate'
+    };
+  };
+
+  const generate3for2Trade = (givingTeam, receivingTeam, givingPositions, receivingPositions) => {
+    const usedPlayerIds = new Set();
+    const givingPlayers = [];
+    
+    for (let i = 0; i < givingPositions.length; i++) {
+      const pos = givingPositions[i];
+      const players = givingTeam.players[pos.toLowerCase() + 's'] || [];
+      const availablePlayer = players.find(p => !usedPlayerIds.has(p.id));
+      if (availablePlayer) {
+        givingPlayers.push(availablePlayer);
+        usedPlayerIds.add(availablePlayer.id);
+      }
+    }
+    
+    const receivingPlayers = [];
+    for (let i = 0; i < receivingPositions.length; i++) {
+      const pos = receivingPositions[i];
+      const players = receivingTeam.players[pos.toLowerCase() + 's'] || [];
+      const availablePlayer = players.find(p => !usedPlayerIds.has(p.id));
+      if (availablePlayer) {
+        receivingPlayers.push(availablePlayer);
+        usedPlayerIds.add(availablePlayer.id);
+      }
+    }
+    
+    if (givingPlayers.length !== 3 || receivingPlayers.length !== 2) return null;
+
+    const givingTeamGives = givingPlayers.map((player, idx) => ({ player, position: givingPositions[idx] }));
+    const receivingTeamGives = receivingPlayers.map((player, idx) => ({ player, position: receivingPositions[idx] }));
+    
+    const simulation = simulateTrade(givingTeam, receivingTeam, givingTeamGives, receivingTeamGives);
+    if (!simulation.valid) return null;
+
+    const givingValue = givingPlayers.reduce((sum, player, idx) => 
+      sum + (player.fantasyPoints * getPositionScarcity(givingPositions[idx])), 0);
+    const receivingValue = receivingPlayers.reduce((sum, player, idx) => 
+      sum + (player.fantasyPoints * getPositionScarcity(receivingPositions[idx])), 0);
+    const valueDiff = Math.abs(givingValue - receivingValue);
+    
+    if (valueDiff > 10) return null;
+    if (receivingValue < givingValue * 0.75) return null;
+
+    const isGivingUser = givingTeam.teamName === userTeamName;
+    return {
+      type: '3-for-2',
+      team1: isGivingUser ? givingTeam.teamName : receivingTeam.teamName,
+      team2: isGivingUser ? receivingTeam.teamName : givingTeam.teamName,
+      team1Gives: isGivingUser ? givingTeamGives.map((give, idx) => ({ 
+        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(givingPositions[idx]) 
+      })) : receivingTeamGives.map((give, idx) => ({ 
+        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(receivingPositions[idx]) 
+      })),
+      team2Gives: isGivingUser ? receivingTeamGives.map((give, idx) => ({ 
+        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(receivingPositions[idx]) 
+      })) : givingTeamGives.map((give, idx) => ({ 
+        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(givingPositions[idx]) 
+      })),
+      valueDifference: valueDiff,
+      fairness: valueDiff <= 3 ? 'Fair' : valueDiff <= 6 ? 'Good' : 'Moderate'
     };
   };
 
