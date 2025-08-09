@@ -25,6 +25,7 @@ import LeagueSearch from './league/LeagueSearch';
 import SeasonSummary from './league/SeasonSummary';
 import PlayerStatsModal from './league/PlayerStatsModal';
 import TradeHistorySection from './league/TradeHistorySection';
+import MatchupSection from './league/MatchupSection';
 import { calculatePlacement, calculateWinStreak, calculateAchievements } from './league/utils';
 
 function LeagueManager() {
@@ -848,7 +849,7 @@ function LeagueManager() {
     setLeagueHistoryData(null);
   };
 
-  const fetchPlayerStats = async (playerId, playerName, year) => {
+  const fetchPlayerStats = async (playerId, playerName, year, targetWeek = null) => {
     setLoadingPlayerStats(true);
     setShowPlayerStats(true);
     setPlayerStatsTab('current');
@@ -927,11 +928,17 @@ function LeagueManager() {
         derivedStats: currentYearData.derivedStats,
         year,
         playerName,
+        playerId,
         overallRank: currentYearData.overallRank,
-        positionRank: currentYearData.positionRank
+        positionRank: currentYearData.positionRank,
+        targetWeek
       });
       
       setAllYearStats(yearlyStats);
+      
+      if (targetWeek) {
+        setPlayerStatsTab('weekly');
+      }
     } catch (err) {
       console.error('Error fetching player stats:', err);
     } finally {
@@ -957,7 +964,6 @@ function LeagueManager() {
         overallRank: yearData.overallRank,
         positionRank: yearData.positionRank
       });
-      setPlayerStatsTab('current');
     }
   };
 
@@ -1825,36 +1831,13 @@ function LeagueManager() {
                   {activeTab === 'lineups' && (
                     <div className="space-y-6">
                       <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-                        <h4 className="text-lg font-semibold mb-4">Weekly Matchup Results</h4>
                         {matchupData && matchupData.length > 0 ? (
-                          <div className="space-y-3">
-                            {matchupData.map(matchup => (
-                              <div key={matchup.week} className={`p-3 rounded border-l-4 ${
-                                matchup.won 
-                                  ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
-                                  : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                              }`}>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4">
-                                    <span className="font-semibold w-16">Week {matchup.week}</span>
-                                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                      matchup.won 
-                                        ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                                        : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                                    }`}>
-                                      {matchup.won ? 'W' : 'L'}
-                                    </span>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="font-semibold">{matchup.userPoints.toFixed(1)} - {matchup.opponentPoints.toFixed(1)}</div>
-                                    <div className="text-sm text-gray-500">
-                                      {matchup.won ? '+' : ''}{(matchup.userPoints - matchup.opponentPoints).toFixed(1)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          <MatchupSection 
+                            matchups={matchupData.map(m => ({ ...m, userRosterId: selectedLeague.userRoster.roster_id }))}
+                            leagueId={selectedLeague.league_id}
+                            season={selectedLeague.season}
+                            onPlayerClick={fetchPlayerStats}
+                          />
                         ) : (
                           <p className="text-center text-gray-500 py-8">No matchup data available</p>
                         )}
@@ -3085,39 +3068,12 @@ function LeagueManager() {
                     
                     {/* Matchups Tab */}
                     {activeTab === 'matchups' && (
-                      <div className="space-y-4">
-                        <h4 className="text-lg font-semibold">Weekly Matchups ({selectedPlayerData.matchups.length})</h4>
-                        <div className="space-y-2">
-                          {selectedPlayerData.matchups.map(matchup => (
-                            <div key={matchup.week} className={`p-3 rounded border-l-4 ${
-                              matchup.won 
-                                ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
-                                : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                            }`}>
-                              <div className="flex justify-between items-center">
-                                <div className="flex items-center gap-3">
-                                  <span className="font-semibold">Week {matchup.week}</span>
-                                  <span className={`px-2 py-1 rounded text-xs font-medium ${
-                                    matchup.won 
-                                      ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                                      : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                                  }`}>
-                                    {matchup.won ? 'W' : 'L'}
-                                  </span>
-                                </div>
-                                <div className="text-right">
-                                  <div className="font-semibold">
-                                    {matchup.userPoints.toFixed(1)} - {matchup.opponentPoints.toFixed(1)}
-                                  </div>
-                                  <div className="text-sm text-gray-500">
-                                    {matchup.won ? '+' : ''}{(matchup.userPoints - matchup.opponentPoints).toFixed(1)}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <MatchupSection 
+                        matchups={selectedPlayerData.matchups.map(m => ({ ...m, userRosterId: selectedPlayerData.roster.roster_id }))}
+                        leagueId={leagueInfoData?.league?.league_id}
+                        season={selectedPlayerData.season}
+                        onPlayerClick={fetchPlayerStats}
+                      />
                     )}
                   </div>
                 </div>
