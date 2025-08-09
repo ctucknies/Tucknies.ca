@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { validateUsername, validateYear, sanitizeInput, secureApiCall } from '../utils/security';
 import { 
   TrophyIcon, 
   UserGroupIcon,
@@ -110,17 +111,29 @@ function LeagueManager() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.username || !formData.year) return;
+    
+    const sanitizedUsername = sanitizeInput(formData.username);
+    const sanitizedYear = sanitizeInput(formData.year);
+    
+    if (!validateUsername(sanitizedUsername)) {
+      setError('Username must be 2-50 characters and contain only letters, numbers, underscores, and hyphens');
+      return;
+    }
+    
+    if (!validateYear(sanitizedYear)) {
+      setError('Invalid year selected');
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
     setLeaguesData(null);
     setAllYearsData(null);
-    setShowingAllYears(formData.year === 'all');
+    setShowingAllYears(sanitizedYear === 'all');
     
     try {
-      console.log('Fetching user:', formData.username);
-      const userResponse = await fetch(`https://api.sleeper.app/v1/user/${formData.username}`);
+      console.log('Fetching user:', sanitizedUsername);
+      const userResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${encodeURIComponent(sanitizedUsername)}`);
       
       if (!userResponse.ok) {
         throw new Error('User not found');
@@ -133,7 +146,7 @@ function LeagueManager() {
         throw new Error('Invalid user data');
       }
       
-      if (formData.year === 'all') {
+      if (sanitizedYear === 'all') {
         // Fetch all years
         const currentYear = new Date().getFullYear();
         const startYear = 2020;
@@ -221,7 +234,7 @@ function LeagueManager() {
       } else {
         // Single year logic (existing)
         console.log('Fetching leagues for user:', userData.user_id);
-        const leaguesResponse = await fetch(`https://api.sleeper.app/v1/user/${userData.user_id}/leagues/nfl/${formData.year}`);
+        const leaguesResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${encodeURIComponent(userData.user_id)}/leagues/nfl/${encodeURIComponent(sanitizedYear)}`);
         
         if (!leaguesResponse.ok) {
           throw new Error('Failed to fetch leagues');
@@ -305,7 +318,7 @@ function LeagueManager() {
       
     } catch (err) {
       console.error('Error:', err);
-      setError(err.message);
+      setError(err.message === 'Rate limit exceeded' ? 'Too many requests. Please wait a moment.' : 'Failed to fetch data. Please try again.');
     } finally {
       setIsLoading(false);
     }

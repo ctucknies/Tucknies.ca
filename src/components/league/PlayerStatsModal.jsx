@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { secureApiCall, validatePlayerId } from '../../utils/security';
 
 const PlayerStatsModal = ({ 
   showPlayerStats, 
@@ -30,18 +31,14 @@ const PlayerStatsModal = ({
       const weeklyData = [];
       for (let week = 1; week <= 18; week++) {
         try {
-          const response = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${year}/${week}`);
-          if (response.ok) {
-            const weekStats = await response.json();
-            const playerWeekStats = weekStats[playerId] || {};
-            weeklyData.push({
-              week,
-              points: playerWeekStats.pts_ppr || playerWeekStats.pts_std || playerWeekStats.pts_half_ppr || 0,
-              stats: playerWeekStats
-            });
-          } else {
-            weeklyData.push({ week, points: 0, stats: {} });
-          }
+          const response = await secureApiCall(`https://api.sleeper.app/v1/stats/nfl/regular/${encodeURIComponent(year)}/${encodeURIComponent(week)}`);
+          const weekStats = await response.json();
+          const playerWeekStats = weekStats[playerId] || {};
+          weeklyData.push({
+            week,
+            points: playerWeekStats.pts_ppr || playerWeekStats.pts_std || playerWeekStats.pts_half_ppr || 0,
+            stats: playerWeekStats
+          });
         } catch (err) {
           weeklyData.push({ week, points: 0, stats: {} });
         }
@@ -64,7 +61,7 @@ const PlayerStatsModal = ({
   };
 
   useEffect(() => {
-    if (playerStatsTab === 'weekly' && playerStatsData && playerStatsData.playerId) {
+    if (playerStatsTab === 'weekly' && playerStatsData && playerStatsData.playerId && validatePlayerId(playerStatsData.playerId)) {
       const cacheKey = `${playerStatsData.playerId}-${playerStatsData.year}`;
       if (weeklyCache[cacheKey]) {
         setWeeklyStats(weeklyCache[cacheKey]);
@@ -82,6 +79,7 @@ const PlayerStatsModal = ({
     setWeeklyStats(null);
     setSelectedWeek(null);
   }, [playerStatsData?.playerId]);
+
   if (!showPlayerStats) return null;
 
   return (

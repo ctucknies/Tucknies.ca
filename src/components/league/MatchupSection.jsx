@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { secureApiCall } from '../../utils/security';
 
 const MatchupSection = ({ matchups, leagueId, season, onPlayerClick }) => {
   const [selectedWeek, setSelectedWeek] = useState(null);
@@ -12,11 +13,11 @@ const MatchupSection = ({ matchups, leagueId, season, onPlayerClick }) => {
     
     try {
       // Get all players data
-      const playersResponse = await fetch('https://api.sleeper.app/v1/players/nfl');
+      const playersResponse = await secureApiCall('https://api.sleeper.app/v1/players/nfl');
       const allPlayers = await playersResponse.json();
       
       // Get matchup details for the week
-      const matchupResponse = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/matchups/${week}`);
+      const matchupResponse = await secureApiCall(`https://api.sleeper.app/v1/league/${encodeURIComponent(leagueId)}/matchups/${encodeURIComponent(week)}`);
       const weekMatchups = await matchupResponse.json();
       
       const userMatchup = weekMatchups.find(m => m.roster_id === matchup.userRosterId);
