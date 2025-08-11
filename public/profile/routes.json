@@ -26,6 +26,11 @@
             "headerTitle": "Projects"
         },
         {
+            "component": "LeagueScouter",
+            "path": "/league-scouter",
+            "headerTitle": "League Scouter"
+        },
+        {
             "component": "LeagueManager",
             "path": "/ff-manager",
             "headerTitle": "Fantasy Manager"
