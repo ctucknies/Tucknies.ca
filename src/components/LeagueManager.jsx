@@ -1213,174 +1213,135 @@ function LeagueManager() {
 
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
-      {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-64 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200/50 dark:border-gray-700/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
-                  <TrophyIcon className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-gray-900 dark:text-white">Fantasy Hub</h2>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Your dashboard</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <span className="text-gray-500 dark:text-gray-400 text-lg">×</span>
-              </button>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Navigation Bar */}
+      <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <TrophyIcon className="w-8 h-8 text-yellow-400" />
+              <span className="text-xl font-bold text-white">Fantasy Hub</span>
             </div>
-          </div>
-          
-          {/* Navigation */}
-          <div className="flex-1 p-4 space-y-2">
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <HomeIcon className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
-            </button>
-            <button 
-              onClick={() => {
-                console.log('Player Stats clicked');
-                setShowPlayerStatsPage(true);
-              }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-            >
-              <UserIcon className="w-5 h-5" />
-              <span className="font-medium">Player Stats</span>
-            </button>
-            <button 
-              onClick={() => setShowTradeFinder(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-            >
-              <ArrowsRightLeftIcon className="w-5 h-5" />
-              <span className="font-medium">Trade Finder</span>
-            </button>
-            <button 
-              onClick={() => setShowLeagueScouter(true)}
-              className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
-            >
-              <MagnifyingGlassIcon className="w-5 h-5" />
-              <span className="font-medium">League Scouter</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <UserIcon className="w-5 h-5" />
-              <span className="font-medium">Trade Player</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <ChartBarIcon className="w-5 h-5" />
-              <span className="font-medium">Analytics</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <BellIcon className="w-5 h-5" />
-              <span className="font-medium">Notifications</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <Cog6ToothIcon className="w-5 h-5" />
-              <span className="font-medium">Settings</span>
-            </button>
-            <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
-              <QuestionMarkCircleIcon className="w-5 h-5" />
-              <span className="font-medium">Help</span>
-            </button>
-          </div>
-          
-          {/* Auth Section */}
-          <div className="p-4 border-t border-gray-200/50 dark:border-gray-700/50">
-            {user ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                  <div className="w-2 h-2 bg-green-500 rounded-full" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user.email}</p>
-                    <p className="text-xs text-green-600 dark:text-green-400">Signed in</p>
-                  </div>
-                </div>
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={() => setShowPlayerStatsPage(true)}
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Player Stats
+              </button>
+              <button 
+                onClick={() => setShowTradeFinder(true)}
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Trade Finder
+              </button>
+              <button 
+                onClick={() => setShowLeagueScouter(true)}
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                League Scouter
+              </button>
+              {user ? (
                 <button
                   onClick={() => setShowProfile(true)}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
                 >
-                  Profile Settings
+                  Profile
                 </button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-500 dark:text-gray-400 text-center">Sign in to unlock features</p>
+              ) : (
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2.5 rounded-xl hover:from-blue-600 hover:to-purple-700 transition-all duration-200 font-medium"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
                 >
                   Sign In
                 </button>
-                <button
-                  onClick={() => setShowAuth(true)}
-                  className="w-full bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 font-medium border border-gray-200 dark:border-gray-700"
-                >
-                  Sign Up
-                </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
+      </nav>
+
+      {/* Hero Section */}
+      <div className="flex flex-col items-center justify-center min-h-screen px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center max-w-4xl mx-auto"
+        >
+          <div className="mb-8">
+            <TrophyIcon className="w-24 h-24 mx-auto text-yellow-400 mb-6" />
+            <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
+              Fantasy Football
+              <span className="block text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
+                Reimagined
+              </span>
+            </h1>
+            <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+              Analyze your leagues, track player stats, find trades, and dominate your competition with advanced fantasy football tools.
+            </p>
+          </div>
+
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl">
+            <LeagueSearch 
+              formData={formData}
+              setFormData={setFormData}
+              onSubmit={handleSubmit}
+              isLoading={isLoading}
+            />
+          </div>
+
+          {/* Feature Cards */}
+          <div className="grid md:grid-cols-3 gap-6 mt-16">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              onClick={() => setShowPlayerStatsPage(true)}
+            >
+              <UserIcon className="w-12 h-12 text-blue-400 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Player Stats</h3>
+              <p className="text-gray-300">Deep dive into player performance and analytics</p>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              onClick={() => setShowTradeFinder(true)}
+            >
+              <ArrowsRightLeftIcon className="w-12 h-12 text-green-400 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Trade Finder</h3>
+              <p className="text-gray-300">Discover optimal trades to improve your team</p>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              onClick={() => setShowLeagueScouter(true)}
+            >
+              <MagnifyingGlassIcon className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">League Scouter</h3>
+              <p className="text-gray-300">Scout and analyze league trends and data</p>
+            </motion.div>
+          </div>
+        </motion.div>
       </div>
-      
-      {/* Main Content */}
-      <div className={`max-w-4xl mx-auto p-6 sm:p-8 transition-all duration-300 ${sidebarOpen ? 'pl-72' : ''} ${showPlayerStatsPage ? 'hidden' : ''}`}>
-
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-12 pt-12"
-      >
-        {!sidebarOpen && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="fixed top-6 left-6 z-[60] w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
-          >
-            <Bars3Icon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
-          </button>
-        )}
-        <div className="relative mb-8">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-pink-600/20 blur-3xl rounded-full" />
-          <TrophyIcon className="w-20 h-20 mx-auto relative z-10 text-transparent bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 bg-clip-text" style={{filter: 'drop-shadow(0 0 20px rgba(251, 191, 36, 0.3))'}} />
-        </div>
-        <h1 className="text-5xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent mb-4 tracking-tight">
-          Fantasy Football
-        </h1>
-        <p className="text-xl text-gray-500 dark:text-gray-400 font-medium max-w-2xl mx-auto leading-relaxed">
-          Your complete fantasy experience, reimagined
-        </p>
-        
-
-      </motion.div>
-
-      <LeagueSearch 
-        formData={formData}
-        setFormData={setFormData}
-        onSubmit={handleSubmit}
-        isLoading={isLoading}
-      />
 
       {error && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-red-50/80 dark:bg-red-900/20 backdrop-blur-xl border border-red-200/50 dark:border-red-800/50 rounded-2xl p-6 mb-8 shadow-lg"
+          className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-red-500/90 backdrop-blur-xl border border-red-400/50 rounded-xl p-4 shadow-lg z-50"
         >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
-              <span className="text-red-600 dark:text-red-400 text-sm">⚠️</span>
-            </div>
+            <span className="text-white text-sm">⚠️</span>
             <div>
-              <p className="text-red-800 dark:text-red-200 font-medium">{error}</p>
+              <p className="text-white font-medium">{error}</p>
               <button
                 onClick={resetSearch}
-                className="mt-1 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+                className="mt-1 text-sm text-red-100 hover:text-white font-medium transition-colors"
               >
                 Try again →
               </button>
@@ -3142,7 +3103,6 @@ function LeagueManager() {
           </motion.div>
         </motion.div>
       )}
-      </div>
       
       {/* Player Stats Page - Full Screen Overlay */}
       {showPlayerStatsPage && (
