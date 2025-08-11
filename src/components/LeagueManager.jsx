@@ -401,227 +401,7 @@ function LeagueManager() {
     setFormData({ username: '', year: new Date().getFullYear().toString() });
   };
 
-  const fetchRosterDetails = useCallback(async (league) => {
-    setLoadingRoster(true);
-    setSelectedLeague(league);
-    setActiveTab('overview');
-    
-    try {
-      // Get all players data with caching
-      const allPlayers = await cachedApiCall('https://api.sleeper.app/v1/players/nfl', 'players', 3600000); // 1 hour TTL
-      
-      // Get player stats for the season with caching
-      const playerStats = await cachedApiCall(
-        `https://api.sleeper.app/v1/stats/nfl/regular/${league.season}`,
-        `stats-${league.season}`,
-        1800000 // 30 min TTL
-      ).catch(() => ({}));
-      
-      // Store season stats globally for trade calculations
-      window.seasonStats = playerStats;
-      
-      // Process roster data
-      const rosterWithNames = league.userRoster.players?.map(playerId => {
-        const stats = playerStats[playerId] || {};
-        const fantasyPoints = stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
-        
-        return {
-          id: playerId,
-          name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
-          position: allPlayers[playerId]?.position || 'N/A',
-          team: allPlayers[playerId]?.team || 'FA',
-          fantasyPoints: fantasyPoints
-        };
-      }) || [];
-      
-      // Sort roster by fantasy points (highest to lowest)
-      rosterWithNames.sort((a, b) => b.fantasyPoints - a.fantasyPoints);
-      
-      // Fetch transactions with caching and batching
-      let allTransactions = [];
-      try {
-        const transactionPromises = [];
-        for (let week = 1; week <= 18; week++) {
-          transactionPromises.push(
-            cachedApiCall(
-              `https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week}`,
-              `transactions-${league.league_id}-${week}`,
-              600000 // 10 min TTL
-            ).catch(() => [])
-          );
-        }
-        const weeklyTransactions = await Promise.all(transactionPromises);
-        allTransactions = weeklyTransactions.flat().filter(t => 
-          t.roster_ids?.includes(league.userRoster.roster_id) ||
-          (t.adds && Object.values(t.adds).includes(league.userRoster.roster_id)) ||
-          (t.drops && Object.values(t.drops).includes(league.userRoster.roster_id))
-        );
-      } catch (error) {
-        // Transactions failed to load
-      }
-      
-      // Fetch draft data with caching
-      let userDraftPicks = [];
-      try {
-        const drafts = await cachedApiCall(
-          `https://api.sleeper.app/v1/league/${league.league_id}/drafts`,
-          `drafts-${league.league_id}`,
-          3600000 // 1 hour TTL
-        );
-        if (drafts.length > 0) {
-          const allPicks = await cachedApiCall(
-            `https://api.sleeper.app/v1/draft/${drafts[0].draft_id}/picks`,
-            `draft-picks-${drafts[0].draft_id}`,
-            3600000 // 1 hour TTL
-          );
-          userDraftPicks = allPicks.filter(pick => pick.roster_id === league.userRoster.roster_id);
-        }
-      } catch (error) {
-        // Draft data failed to load
-      }
-      
-      // Process transactions with player names
-      const processedTransactions = allTransactions.map(transaction => {
-        const userRosterId = league.userRoster.roster_id;
-        const userAdds = [];
-        const userDrops = [];
-        
-        if (transaction.adds) {
-          Object.entries(transaction.adds).forEach(([playerId, rosterId]) => {
-            if (rosterId === userRosterId) {
-              userAdds.push({
-                id: playerId,
-                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
-                position: allPlayers[playerId]?.position || 'N/A'
-              });
-            }
-          });
-        }
-        
-        if (transaction.drops) {
-          Object.entries(transaction.drops).forEach(([playerId, rosterId]) => {
-            if (rosterId === userRosterId) {
-              userDrops.push({
-                id: playerId,
-                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
-                position: allPlayers[playerId]?.position || 'N/A'
-              });
-            }
-          });
-        }
-        
-        return {
-          ...transaction,
-          adds: userAdds,
-          drops: userDrops
-        };
-      });
-      
-      // Process draft picks
-      const processedDraft = userDraftPicks.map(pick => ({
-        ...pick,
-        player: {
-          name: allPlayers[pick.player_id]?.full_name || (allPlayers[pick.player_id]?.position === 'DEF' ? `${allPlayers[pick.player_id]?.team || 'Unknown'} DEF` : 'Unknown Player'),
-          position: allPlayers[pick.player_id]?.position || 'N/A',
-          team: allPlayers[pick.player_id]?.team || 'FA'
-        }
-      }));
-      
-      // Fetch matchup data with caching
-      const matchupPromises = [];
-      for (let week = 1; week <= 18; week++) {
-        matchupPromises.push(
-          cachedApiCall(
-            `https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`,
-            `matchups-${league.league_id}-${week}`,
-            600000 // 10 min TTL
-          ).catch(() => [])
-        );
-      }
-      const weeklyMatchups = await Promise.all(matchupPromises);
-      // Process matchup data
-      const userMatchups = weeklyMatchups.map((week, index) => {
-        const userMatchup = week.find(m => m.roster_id === league.userRoster.roster_id);
-        if (!userMatchup) return null;
-        const opponent = week.find(m => m.matchup_id === userMatchup.matchup_id && m.roster_id !== league.userRoster.roster_id);
-        return {
-          week: index + 1,
-          userPoints: userMatchup.points || 0,
-          opponentPoints: opponent?.points || 0,
-          won: (userMatchup.points || 0) > (opponent?.points || 0),
-          opponentRosterId: opponent?.roster_id
-        };
-      }).filter(Boolean);
-      
-      // Calculate analytics
-      const validMatchups = userMatchups.filter(m => m.userPoints > 0);
-      const wins = validMatchups.filter(m => m.won).length;
-      const totalPoints = validMatchups.reduce((sum, m) => sum + m.userPoints, 0);
-      const analytics = {
-        record: `${wins}-${validMatchups.length - wins}`,
-        totalPoints: totalPoints.toFixed(1),
-        avgPoints: validMatchups.length > 0 ? (totalPoints / validMatchups.length).toFixed(1) : '0',
-        highestScore: validMatchups.length > 0 ? Math.max(...validMatchups.map(m => m.userPoints)).toFixed(1) : '0',
-        lowestScore: validMatchups.length > 0 ? Math.min(...validMatchups.map(m => m.userPoints)).toFixed(1) : '0',
-        winStreak: calculateWinStreak(validMatchups),
-        pointsAgainst: validMatchups.reduce((sum, m) => sum + m.opponentPoints, 0).toFixed(1)
-      };
-      
-      // Calculate achievements
-      const userAchievements = calculateAchievements(analytics, userMatchups, userData, league);
-      
-      // Get all league rosters for comparison with caching
-      const [allRosters, allUsers] = await Promise.all([
-        cachedApiCall(
-          `https://api.sleeper.app/v1/league/${league.league_id}/rosters`,
-          `rosters-${league.league_id}`,
-          300000 // 5 min TTL
-        ).catch(() => []),
-        cachedApiCall(
-          `https://api.sleeper.app/v1/league/${league.league_id}/users`,
-          `users-${league.league_id}`,
-          300000 // 5 min TTL
-        ).catch(() => [])
-      ]);
-      
-      // Process rosters with user info
-      const rostersWithUsers = allRosters.map(roster => {
-        const user = allUsers.find(u => u.user_id === roster.owner_id);
-        return {
-          ...roster,
-          username: user?.display_name || user?.username || 'Unknown',
-          wins: roster.settings?.wins || 0,
-          losses: roster.settings?.losses || 0,
-          points_for: roster.settings?.fpts || 0
-        };
-      });
-      
-      setRosterData(rosterWithNames);
-      setTransactions(processedTransactions);
-      setDraftData(processedDraft);
-      setMatchupData(userMatchups);
-      setAnalyticsData(analytics);
-      setAchievements(userAchievements);
-      
-      // Use the existing matchup data for head-to-head comparisons
-      const allWeeklyMatchups = weeklyMatchups;
-      
-      // Add matchup data to rosters
-      const rostersWithMatchups = rostersWithUsers.map(roster => ({
-        ...roster,
-        weeklyMatchups: weeklyMatchups
-      }));
-      
-      setAllLeagueRosters(rostersWithMatchups);
-    } catch (err) {
-      console.error('Error fetching league details:', err);
-      setRosterData([]);
-      setTransactions([]);
-      setDraftData([]);
-    } finally {
-      setLoadingRoster(false);
-    }
-  }, [cachedApiCall]);
+
 
   const closeModal = () => {
     setSelectedLeague(null);
@@ -1110,10 +890,14 @@ function LeagueManager() {
     });
   };
 
-  const fetchPlayerModalData = async (username, leagueId, season) => {
+  const fetchPlayerModalData = async (username, leagueId, season, isSelfView = false) => {
     setLoadingPlayerModal(true);
     setShowPlayerModal(true);
     setActiveTab('roster');
+    
+    if (isSelfView) {
+      setSelectedLeague({ league_id: leagueId, season, name: selectedLeague?.name || 'League' });
+    }
     
     try {
       // Get user ID from username
@@ -1252,6 +1036,55 @@ function LeagueManager() {
         pointsAgainst: validMatchups.reduce((sum, m) => sum + m.opponentPoints, 0).toFixed(1)
       };
       
+      // Get draft data
+      let userDraftPicks = [];
+      try {
+        const draftsResponse = await fetch(`https://api.sleeper.app/v1/league/${leagueId}/drafts`);
+        if (draftsResponse.ok) {
+          const drafts = await draftsResponse.json();
+          if (drafts.length > 0) {
+            const draftPicksResponse = await fetch(`https://api.sleeper.app/v1/draft/${drafts[0].draft_id}/picks`);
+            if (draftPicksResponse.ok) {
+              const allPicks = await draftPicksResponse.json();
+              userDraftPicks = allPicks.filter(pick => pick.roster_id === userRoster.roster_id);
+            }
+          }
+        }
+      } catch (error) {
+        // Draft data failed to load
+      }
+      
+      // Process draft picks with player names
+      const processedDraft = userDraftPicks.map(pick => ({
+        ...pick,
+        player: {
+          name: allPlayers[pick.player_id]?.full_name || (allPlayers[pick.player_id]?.position === 'DEF' ? `${allPlayers[pick.player_id]?.team || 'Unknown'} DEF` : 'Unknown Player'),
+          position: allPlayers[pick.player_id]?.position || 'N/A',
+          team: allPlayers[pick.player_id]?.team || 'FA'
+        }
+      }));
+      
+      // Calculate achievements for self-view
+      let userAchievements = [];
+      if (isSelfView) {
+        const analytics = {
+          record: seasonStats.record,
+          totalPoints: seasonStats.totalPoints,
+          avgPoints: seasonStats.avgPoints,
+          highestScore: seasonStats.highestScore,
+          lowestScore: seasonStats.lowestScore,
+          winStreak: calculateWinStreak(userMatchups.filter(m => m.userPoints > 0)),
+          pointsAgainst: seasonStats.pointsAgainst
+        };
+        userAchievements = calculateAchievements(analytics, userMatchups, { display_name: username }, { league_id: leagueId, season });
+      }
+      
+      // Get all league rosters for comparison
+      const [allRosters, allUsers] = await Promise.all([
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`).then(r => r.ok ? r.json() : []),
+        fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`).then(r => r.ok ? r.json() : [])
+      ]);
+      
       setSelectedPlayerData({
         user,
         roster: userRoster,
@@ -1261,7 +1094,20 @@ function LeagueManager() {
         waivers: processedTransactions.filter(t => t.type === 'waiver' || t.type === 'free_agent'),
         matchups: userMatchups,
         seasonStats,
-        season
+        season,
+        draft: processedDraft,
+        achievements: userAchievements,
+        isSelfView,
+        allLeagueRosters: allRosters.map(roster => {
+          const rosterUser = allUsers.find(u => u.user_id === roster.owner_id);
+          return {
+            ...roster,
+            username: rosterUser?.display_name || rosterUser?.username || 'Unknown',
+            wins: roster.settings?.wins || 0,
+            losses: roster.settings?.losses || 0,
+            points_for: roster.settings?.fpts || 0
+          };
+        })
       });
     } catch (err) {
       console.error('Error fetching player data:', err);
@@ -1276,7 +1122,15 @@ function LeagueManager() {
     setSelectedPlayerData(null);
   };
 
-
+  const fetchRosterDetails = useCallback(async (league) => {
+    try {
+      // Use the player modal data structure instead
+      const username = userData?.display_name || userData?.username || 'You';
+      await fetchPlayerModalData(username, league.league_id, league.season, true); // true flag for self-view
+    } catch (err) {
+      console.error('Error fetching league details:', err);
+    }
+  }, [userData, fetchPlayerModalData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -1528,696 +1382,7 @@ function LeagueManager() {
         </motion.div>
       )}
 
-      {/* Roster Modal */}
-      {selectedLeague && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-          onClick={closeModal}
-        >
-          <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white dark:bg-gray-800 rounded-xl max-w-2xl w-full max-h-[80vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="p-4 sm:p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg sm:text-xl font-bold">{selectedLeague.name}</h3>
-                <button
-                  onClick={closeModal}
-                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                >
-                  ✕
-                </button>
-              </div>
-              
-              {/* Tabs */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1 mb-6 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                {[
-                  { id: 'overview', label: 'Overview', icon: HomeIcon },
-                  { id: 'players', label: 'My Roster', icon: UserIcon },
-                  { id: 'compare', label: 'Compare', icon: ChartBarIcon },
-                  { id: 'lineups', label: 'Matchups', icon: ClipboardDocumentListIcon },
-                  { id: 'trades', label: 'Trades', icon: ArrowsRightLeftIcon },
-                  { id: 'waivers', label: 'Waivers', icon: UserIcon },
-                  { id: 'awards', label: 'Awards', icon: TrophyIcon }
-                ].map(tab => {
-                  const IconComponent = tab.icon;
-                  return (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className={`py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                        activeTab === tab.id
-                          ? 'bg-white dark:bg-gray-800 text-primary-600 shadow-sm'
-                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <IconComponent className="w-3 h-3" />
-                      <span className="hidden sm:inline">{tab.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              
-              {loadingRoster ? (
-                <div className="flex justify-center py-8">
-                  <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
-                </div>
-              ) : (
-                <div>
-                  {/* Overview Tab */}
-                  {activeTab === 'overview' && analyticsData && (
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg">
-                          <div className="text-2xl font-bold text-blue-600">{analyticsData.record}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Record</div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
-                          <div className="text-2xl font-bold text-green-600">{analyticsData.totalPoints}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Total Points</div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
-                          <div className="text-2xl font-bold text-purple-600">{analyticsData.avgPoints}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Avg/Game</div>
-                        </div>
-                        <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
-                          <div className="text-2xl font-bold text-orange-600">{analyticsData.winStreak}</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Best Streak</div>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-lg">Season Highs & Lows</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded">
-                              <span>Highest Score</span>
-                              <span className="font-bold text-green-600">{analyticsData.highestScore}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                              <span>Lowest Score</span>
-                              <span className="font-bold text-red-600">{analyticsData.lowestScore}</span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                              <span>Points Against</span>
-                              <span className="font-bold">{analyticsData.pointsAgainst}</span>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="space-y-3">
-                          <h4 className="font-semibold text-lg">Performance Metrics</h4>
-                          <div className="space-y-2">
-                            <div className="flex justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                              <span>Win Percentage</span>
-                              <span className="font-bold text-blue-600">
-                                {matchupData ? ((matchupData.filter(m => m.won).length / matchupData.filter(m => m.userPoints > 0).length) * 100).toFixed(1) : 0}%
-                              </span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded">
-                              <span>Avg Margin</span>
-                              <span className="font-bold text-purple-600">
-                                {matchupData ? (matchupData.filter(m => m.userPoints > 0).reduce((sum, m) => sum + (m.userPoints - m.opponentPoints), 0) / matchupData.filter(m => m.userPoints > 0).length).toFixed(1) : 0}
-                              </span>
-                            </div>
-                            <div className="flex justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded">
-                              <span>Games Played</span>
-                              <span className="font-bold text-yellow-600">{matchupData ? matchupData.filter(m => m.userPoints > 0).length : 0}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
 
-                  
-                  {/* Player Lab Tab */}
-                  {activeTab === 'players' && (
-                    <div className="space-y-6">
-                      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-                        <h4 className="text-lg font-semibold mb-4">My Roster</h4>
-                        {rosterData && rosterData.length > 0 ? (
-                          <div className="space-y-1">
-                            {rosterData.map((player, index) => (
-                              <div key={index} className="flex justify-between items-center p-2 rounded text-sm transition-colors bg-gray-100 dark:bg-gray-600">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  <span className={`px-1.5 py-0.5 rounded text-xs font-bold flex-shrink-0 ${
-                                    player.position === 'QB' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
-                                    player.position === 'RB' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                                    player.position === 'WR' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                                    player.position === 'TE' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                                  }`}>
-                                    {player.position}
-                                  </span>
-                                  <button 
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      fetchPlayerStats(player.id, player.name, selectedLeague.season);
-                                    }}
-                                    className="font-medium truncate hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
-                                  >
-                                    {player.name}
-                                  </button>
-                                </div>
-                                <div className="text-right flex-shrink-0">
-                                  <div className="font-bold text-green-600 dark:text-green-400">
-                                    {player.fantasyPoints.toFixed(1)}
-                                  </div>
-                                  <div className="text-xs text-gray-500">{player.team}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-center text-gray-500 py-8">No roster data available</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* League Member Comparison Tab */}
-                  {activeTab === 'compare' && (
-                    <div className="space-y-6">
-                      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-                        <h4 className="text-lg font-semibold mb-4">League Member Comparison</h4>
-                        {allLeagueRosters && allLeagueRosters.length > 0 ? (
-                          <div className="space-y-4">
-                            {/* Player Selection */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-2">Select First Player</label>
-                                <select 
-                                  value={selectedPlayer1} 
-                                  onChange={(e) => setSelectedPlayer1(e.target.value)}
-                                  className="w-full p-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-                                >
-                                  <option value="">Choose a player...</option>
-                                  {allLeagueRosters.map(roster => (
-                                    <option key={roster.roster_id} value={roster.roster_id.toString()}>
-                                      {roster.username}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-2">Select Second Player</label>
-                                <select 
-                                  value={selectedPlayer2} 
-                                  onChange={(e) => setSelectedPlayer2(e.target.value)}
-                                  className="w-full p-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
-                                >
-                                  <option value="">Choose a player...</option>
-                                  {allLeagueRosters.filter(r => r.roster_id.toString() !== selectedPlayer1).map(roster => (
-                                    <option key={roster.roster_id} value={roster.roster_id.toString()}>
-                                      {roster.username}
-                                    </option>
-                                  ))}
-                                </select>
-                              </div>
-                            </div>
-                            
-                            {/* Comparison Results */}
-                            {selectedPlayer1 && selectedPlayer2 && (() => {
-                              const player1 = allLeagueRosters.find(r => r.roster_id.toString() === selectedPlayer1);
-                              const player2 = allLeagueRosters.find(r => r.roster_id.toString() === selectedPlayer2);
-                              
-                              if (!player1 || !player2) return null;
-                              
-                              return (
-                                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg">
-                                  <h5 className="text-lg font-semibold mb-4 text-center">
-                                    {player1.username} vs {player2.username}
-                                  </h5>
-                                  
-                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {/* Player 1 Stats */}
-                                    <div className="text-center">
-                                      <h6 className="font-semibold text-blue-600 mb-3">{player1.username}</h6>
-                                      <div className="space-y-2">
-                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                          <div className="text-2xl font-bold text-blue-600">{player1.wins}-{player1.losses}</div>
-                                          <div className="text-sm text-gray-500">Record</div>
-                                        </div>
-                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                          <div className="text-2xl font-bold text-blue-600">{player1.points_for.toFixed(1)}</div>
-                                          <div className="text-sm text-gray-500">Points For</div>
-                                        </div>
-                                        <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                          <div className="text-2xl font-bold text-blue-600">{(player1.points_for / (player1.wins + player1.losses) || 0).toFixed(1)}</div>
-                                          <div className="text-sm text-gray-500">Avg/Game</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Comparison */}
-                                    <div className="text-center">
-                                      <h6 className="font-semibold text-gray-600 mb-3">Head-to-Head</h6>
-                                      <div className="space-y-2">
-                                        <div className="p-3 bg-gray-100 dark:bg-gray-600 rounded">
-                                          <div className="text-sm text-gray-500 mb-1">Better Record</div>
-                                          <div className="font-bold">
-                                            {player1.wins > player2.wins ? player1.username : 
-                                             player2.wins > player1.wins ? player2.username : 'Tie'}
-                                          </div>
-                                        </div>
-                                        <div className="p-3 bg-gray-100 dark:bg-gray-600 rounded">
-                                          <div className="text-sm text-gray-500 mb-1">More Points</div>
-                                          <div className="font-bold">
-                                            {player1.points_for > player2.points_for ? player1.username : player2.username}
-                                          </div>
-                                        </div>
-                                        <div className="p-3 bg-gray-100 dark:bg-gray-600 rounded">
-                                          <div className="text-sm text-gray-500 mb-1">Point Difference</div>
-                                          <div className="font-bold">
-                                            {Math.abs(player1.points_for - player2.points_for).toFixed(1)}
-                                          </div>
-                                        </div>
-                                        
-                                        {/* Head-to-Head Record */}
-                                        {(() => {
-                                          const h2hGames = [];
-                                          player1.weeklyMatchups?.forEach((week, weekIndex) => {
-                                            const player1Matchup = week.find(m => m.roster_id === player1.roster_id);
-                                            const player2Matchup = week.find(m => m.roster_id === player2.roster_id);
-                                            
-                                            if (player1Matchup && player2Matchup && player1Matchup.matchup_id === player2Matchup.matchup_id) {
-                                              h2hGames.push({
-                                                week: weekIndex + 1,
-                                                player1Score: player1Matchup.points || 0,
-                                                player2Score: player2Matchup.points || 0,
-                                                winner: (player1Matchup.points || 0) > (player2Matchup.points || 0) ? player1.username : player2.username
-                                              });
-                                            }
-                                          });
-                                          
-                                          const player1Wins = h2hGames.filter(g => g.winner === player1.username).length;
-                                          const player2Wins = h2hGames.filter(g => g.winner === player2.username).length;
-                                          
-                                          return (
-                                            <div className="p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded">
-                                              <div className="text-sm text-gray-500 mb-1">Head-to-Head</div>
-                                              <div className="font-bold">
-                                                {player1Wins}-{player2Wins}
-                                              </div>
-                                              <div className="text-xs text-gray-400 mt-1">
-                                                {h2hGames.length} game{h2hGames.length !== 1 ? 's' : ''}
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    </div>
-                                    
-                                    {/* Player 2 Stats */}
-                                    <div className="text-center">
-                                      <h6 className="font-semibold text-red-600 mb-3">{player2.username}</h6>
-                                      <div className="space-y-2">
-                                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                                          <div className="text-2xl font-bold text-red-600">{player2.wins}-{player2.losses}</div>
-                                          <div className="text-sm text-gray-500">Record</div>
-                                        </div>
-                                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                                          <div className="text-2xl font-bold text-red-600">{player2.points_for.toFixed(1)}</div>
-                                          <div className="text-sm text-gray-500">Points For</div>
-                                        </div>
-                                        <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded">
-                                          <div className="text-2xl font-bold text-red-600">{(player2.points_for / (player2.wins + player2.losses) || 0).toFixed(1)}</div>
-                                          <div className="text-sm text-gray-500">Avg/Game</div>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Head-to-Head Game Results */}
-                                  {(() => {
-                                    const h2hGames = [];
-                                    player1.weeklyMatchups?.forEach((week, weekIndex) => {
-                                      const player1Matchup = week.find(m => m.roster_id === player1.roster_id);
-                                      const player2Matchup = week.find(m => m.roster_id === player2.roster_id);
-                                      
-                                      if (player1Matchup && player2Matchup && player1Matchup.matchup_id === player2Matchup.matchup_id) {
-                                        h2hGames.push({
-                                          week: weekIndex + 1,
-                                          player1Score: player1Matchup.points || 0,
-                                          player2Score: player2Matchup.points || 0,
-                                          winner: (player1Matchup.points || 0) > (player2Matchup.points || 0) ? player1.username : player2.username
-                                        });
-                                      }
-                                    });
-                                    
-                                    if (h2hGames.length > 0) {
-                                      return (
-                                        <div className="mt-6">
-                                          <h6 className="font-semibold mb-3 text-center">Head-to-Head Games</h6>
-                                          <div className="space-y-2">
-                                            {h2hGames.map((game, index) => (
-                                              <div key={index} className={`p-3 rounded border-l-4 ${
-                                                game.winner === player1.username 
-                                                  ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500' 
-                                                  : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                                              }`}>
-                                                <div className="flex justify-between items-center">
-                                                  <span className="text-sm font-medium">Week {game.week}</span>
-                                                  <span className="font-bold">
-                                                    {game.player1Score.toFixed(1)} - {game.player2Score.toFixed(1)}
-                                                  </span>
-                                                  <span className={`text-xs px-2 py-1 rounded ${
-                                                    game.winner === player1.username 
-                                                      ? 'bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100'
-                                                      : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                                                  }`}>
-                                                    {game.winner === player1.username ? 'W' : 'L'}
-                                                  </span>
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })()}
-                                </div>
-                              );
-                            })()}
-                            
-                            {(!selectedPlayer1 || !selectedPlayer2) && (
-                              <div className="text-center py-8 text-gray-500">
-                                Select two league members to compare their performance
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <p className="text-center text-gray-500 py-8">No league data available for comparison</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Lineup Analyzer Tab */}
-                  {activeTab === 'lineups' && (
-                    <div className="space-y-6">
-                      <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
-                        {matchupData && matchupData.length > 0 ? (
-                          <MatchupSection 
-                            matchups={matchupData.map(m => ({ ...m, userRosterId: selectedLeague.userRoster.roster_id }))}
-                            leagueId={selectedLeague.league_id}
-                            season={selectedLeague.season}
-                            onPlayerClick={fetchPlayerStats}
-                          />
-                        ) : (
-                          <p className="text-center text-gray-500 py-8">No matchup data available</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Roster Tab (now hidden, content moved to overview) */}
-                  {activeTab === 'roster' && rosterData && (
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].map(position => {
-                          const positionPlayers = rosterData.filter(player => player.position === position);
-                          if (positionPlayers.length === 0) return null;
-                          
-                          return (
-                            <div key={position} className="space-y-2">
-                              <h4 className="font-semibold text-primary-600">{position}</h4>
-                              {positionPlayers.map(player => (
-                                <div key={player.id} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                                  <span className="font-medium">{player.name}</span>
-                                  <span className="text-sm text-gray-500">{player.team}</span>
-                                </div>
-                              ))}
-                            </div>
-                          );
-                        })}
-                        
-                        {rosterData.filter(p => !['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].includes(p.position)).length > 0 && (
-                          <div className="md:col-span-2 space-y-2">
-                            <h4 className="font-semibold text-primary-600">Bench</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                              {rosterData.filter(p => !['QB', 'RB', 'WR', 'TE', 'K', 'DEF'].includes(p.position)).map(player => (
-                                <div key={player.id} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                                  <span>{player.name}</span>
-                                  <span className="text-sm text-gray-500">{player.position} - {player.team}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Draft Tab */}
-                  {activeTab === 'draft' && (
-                    <div className="space-y-3">
-                      {draftData && draftData.length > 0 ? (
-                        draftData.map(pick => (
-                          <div key={pick.pick_no} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                            <div>
-                              <span className="font-medium">{pick.player.name}</span>
-                              <span className="text-sm text-gray-500 ml-2">{pick.player.position} - {pick.player.team}</span>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-sm font-medium">Round {pick.round}</div>
-                              <div className="text-xs text-gray-500">Pick {pick.pick_no}</div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-center text-gray-500 py-8">No draft data available</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Trade Analyzer Tab */}
-                  {activeTab === 'trades' && (
-                    <TradeHistorySection 
-                      trades={transactions ? transactions.filter(t => t.type === 'trade') : []}
-                      selectedLeague={selectedLeague}
-                      allLeagueRosters={allLeagueRosters}
-                      rosterData={rosterData}
-                      leagueInfoData={leagueInfoData}
-                      showAnalytics={true}
-                    />
-                  )}
-                  
-                  {/* Original Trades Tab (now hidden) */}
-                  {activeTab === 'original-trades' && (
-                    <div className="space-y-3">
-                      {transactions && transactions.filter(t => t.type === 'trade').length > 0 ? (
-                        transactions.filter(t => t.type === 'trade').map((trade, index) => (
-                          <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                            <div className="text-sm text-gray-500 mb-2">Week {trade.leg}</div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <h5 className="font-medium text-green-600 mb-1">Acquired</h5>
-                                {trade.adds.map(player => (
-                                  <div key={player.id} className="text-sm">{player.name} ({player.position})</div>
-                                ))}
-                              </div>
-                              <div>
-                                <h5 className="font-medium text-red-600 mb-1">Traded Away</h5>
-                                {trade.drops.map(player => (
-                                  <div key={player.id} className="text-sm">{player.name} ({player.position})</div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-center text-gray-500 py-8">No trades found</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Waivers Tab */}
-                  {activeTab === 'waivers' && (
-                    <div className="space-y-3">
-                      {transactions && transactions.filter(t => t.type === 'waiver' || t.type === 'free_agent').length > 0 ? (
-                        transactions.filter(t => t.type === 'waiver' || t.type === 'free_agent').map((transaction, index) => (
-                          <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700 rounded">
-                            <div className="flex justify-between items-center mb-2">
-                              <span className="text-sm font-medium capitalize">{transaction.type.replace('_', ' ')}</span>
-                              <span className="text-sm text-gray-500">Week {transaction.leg}</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <h5 className="font-medium text-green-600 mb-1">Added</h5>
-                                {transaction.adds.map(player => (
-                                  <div key={player.id} className="text-sm">{player.name} ({player.position})</div>
-                                ))}
-                              </div>
-                              <div>
-                                <h5 className="font-medium text-red-600 mb-1">Dropped</h5>
-                                {transaction.drops.map(player => (
-                                  <div key={player.id} className="text-sm">{player.name} ({player.position})</div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-center text-gray-500 py-8">No waiver/free agent activity found</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Matchups Tab (now hidden) */}
-                  {activeTab === 'matchups' && (
-                    <div className="space-y-3">
-                      {matchupData && matchupData.length > 0 ? (
-                        matchupData.map(matchup => (
-                          <div key={matchup.week} className={`p-4 rounded-lg border-l-4 ${
-                            matchup.won 
-                              ? 'bg-green-50 dark:bg-green-900/20 border-green-500' 
-                              : 'bg-red-50 dark:bg-red-900/20 border-red-500'
-                          }`}>
-                            <div className="flex justify-between items-center">
-                              <div>
-                                <span className="font-medium">Week {matchup.week}</span>
-                                <span className={`ml-2 px-2 py-1 rounded text-xs font-medium ${
-                                  matchup.won 
-                                    ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                                    : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-                                }`}>
-                                  {matchup.won ? 'W' : 'L'}
-                                </span>
-                              </div>
-                              <div className="text-right">
-                                <div className="font-bold">
-                                  {matchup.userPoints.toFixed(1)} - {matchup.opponentPoints.toFixed(1)}
-                                </div>
-                                <div className="text-sm text-gray-500">
-                                  {matchup.won ? '+' : ''}{(matchup.userPoints - matchup.opponentPoints).toFixed(1)}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-center text-gray-500 py-8">No matchup data available</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Awards Tab */}
-                  {activeTab === 'awards' && (
-                    <div className="space-y-4">
-                      {achievements && achievements.length > 0 ? (
-                        <div className="space-y-6">
-                          {/* Championship Awards */}
-                          {achievements.filter(a => ['champion', 'runner-up', 'bronze'].includes(a.type)).length > 0 && (
-                            <div>
-                              <h4 className="text-lg font-semibold mb-3 text-yellow-600 dark:text-yellow-400">🏆 Championship Awards</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {achievements.filter(a => ['champion', 'runner-up', 'bronze'].includes(a.type)).map((achievement, index) => (
-                                  <div key={index} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
-                                    <div className="text-lg font-medium text-center">{achievement.text}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Performance Awards */}
-                          {achievements.filter(a => ['explosive', 'high-score', 'scoring-champ', 'elite', 'perfect', 'consistent'].includes(a.type)).length > 0 && (
-                            <div>
-                              <h4 className="text-lg font-semibold mb-3 text-green-600 dark:text-green-400">⭐ Performance Awards</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {achievements.filter(a => ['explosive', 'high-score', 'scoring-champ', 'elite', 'perfect', 'consistent'].includes(a.type)).map((achievement, index) => (
-                                  <div key={index} className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                                    <div className="text-lg font-medium text-center">{achievement.text}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Streak & Style Awards */}
-                          {achievements.filter(a => ['domination', 'streak', 'clutch', 'crusher'].includes(a.type)).length > 0 && (
-                            <div>
-                              <h4 className="text-lg font-semibold mb-3 text-blue-600 dark:text-blue-400">🔥 Streak & Style Awards</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {achievements.filter(a => ['domination', 'streak', 'clutch', 'crusher'].includes(a.type)).map((achievement, index) => (
-                                  <div key={index} className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                                    <div className="text-lg font-medium text-center">{achievement.text}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {/* Dubious Honors */}
-                          {achievements.filter(a => ['dud', 'heartbreak', 'punching-bag', 'volatile', 'rebuilding'].includes(a.type)).length > 0 && (
-                            <div>
-                              <h4 className="text-lg font-semibold mb-3 text-red-600 dark:text-red-400">😅 Dubious Honors</h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {achievements.filter(a => ['dud', 'heartbreak', 'punching-bag', 'volatile', 'rebuilding'].includes(a.type)).map((achievement, index) => (
-                                  <div key={index} className="p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-lg border border-red-200 dark:border-red-800">
-                                    <div className="text-lg font-medium text-center">{achievement.text}</div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <div className="text-4xl mb-2">🎯</div>
-                          <p className="text-gray-500">No achievements unlocked this season</p>
-                          <p className="text-sm text-gray-400 mt-2">Win games, score big, or make the playoffs to earn badges!</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* Timeline Tab */}
-                  {activeTab === 'timeline' && (
-                    <div className="space-y-4">
-                      <div className="relative">
-                        <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-300 dark:bg-gray-600"></div>
-                        
-                        {draftData && draftData.length > 0 && (
-                          <div className="relative flex items-start mb-6">
-                            <div className="absolute left-0 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                              <span className="text-white text-sm font-bold">D</span>
-                            </div>
-                            <div className="ml-12">
-                              <h4 className="font-semibold text-blue-600">Draft Day</h4>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Selected {draftData.length} players</p>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <div className="relative flex items-start">
-                          <div className="absolute left-0 w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">🏁</span>
-                          </div>
-                          <div className="ml-12">
-                            <h4 className="font-semibold text-yellow-600">Season End</h4>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {analyticsData ? `Finished ${analyticsData.record} with ${analyticsData.totalPoints} points` : 'Season completed'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
 
       {/* League Info Modal */}
       {showLeagueInfo && (
@@ -3071,30 +2236,39 @@ function LeagueManager() {
                       <div className="text-sm text-gray-500">Avg/Game</div>
                     </div>
                     <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-lg text-center">
-                      <div className="text-2xl font-bold text-orange-600">#{selectedPlayerData.roster.settings?.rank || 'N/A'}</div>
-                      <div className="text-sm text-gray-500">Final Rank</div>
+                      <div className="text-2xl font-bold text-orange-600">
+                        #{selectedPlayerData.allLeagueRosters ? 
+                          selectedPlayerData.allLeagueRosters
+                            .sort((a, b) => b.wins !== a.wins ? b.wins - a.wins : b.points_for - a.points_for)
+                            .findIndex(r => r.roster_id === selectedPlayerData.roster.roster_id) + 1
+                          : selectedPlayerData.roster.settings?.rank || 'N/A'}
+                      </div>
+                      <div className="text-sm text-gray-500">Season Rank</div>
                     </div>
                   </div>
                   
                   {/* Tabs */}
-                  <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
                     {[
                       { id: 'roster', label: 'Roster', icon: '👥' },
+                      { id: 'draft', label: 'Draft', icon: '🎯' },
                       { id: 'trades', label: 'Trades', icon: '🔄' },
                       { id: 'waivers', label: 'Waivers', icon: '📋' },
-                      { id: 'matchups', label: 'Matchups', icon: '⚔️' }
+                      { id: 'matchups', label: 'Matchups', icon: '⚔️' },
+                      { id: 'awards', label: 'Awards', icon: '🏆' },
+                      { id: 'compare', label: 'Compare', icon: '📊' }
                     ].map(tab => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id)}
-                        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                        className={`py-2 px-2 rounded-md text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                           activeTab === tab.id
                             ? 'bg-white dark:bg-gray-800 text-primary-600 shadow-sm'
                             : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                         }`}
                       >
                         <span>{tab.icon}</span>
-                        {tab.label}
+                        <span className="hidden sm:inline">{tab.label}</span>
                       </button>
                     ))}
                   </div>
@@ -3198,6 +2372,240 @@ function LeagueManager() {
                         ) : (
                           <p className="text-center text-gray-500 py-8">No waiver activity this season</p>
                         )}
+                      </div>
+                    )}
+                    
+                    {/* Draft Tab */}
+                    {activeTab === 'draft' && (
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-semibold">Draft Picks ({selectedPlayerData.draft?.length || 0})</h4>
+                        {selectedPlayerData.draft && selectedPlayerData.draft.length > 0 ? (
+                          <div className="space-y-2">
+                            {selectedPlayerData.draft.map(pick => (
+                              <div key={pick.pick_no} className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded">
+                                <div className="flex items-center gap-3">
+                                  <div className="text-center">
+                                    <div className="text-sm font-bold text-blue-600">{pick.round}</div>
+                                    <div className="text-xs text-gray-500">R{pick.round}</div>
+                                  </div>
+                                  <div className="text-center">
+                                    <div className="text-sm font-bold">{pick.pick_no}</div>
+                                    <div className="text-xs text-gray-500">Pick</div>
+                                  </div>
+                                  <span className={`px-2 py-1 rounded text-xs font-bold ${
+                                    pick.player.position === 'QB' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                    pick.player.position === 'RB' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                    pick.player.position === 'WR' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                                    pick.player.position === 'TE' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                                    'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                                  }`}>
+                                    {pick.player.position}
+                                  </span>
+                                  <button 
+                                    onClick={() => {
+                                      closePlayerModal();
+                                      fetchPlayerStats(pick.player_id, pick.player.name, selectedPlayerData.season);
+                                    }}
+                                    className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                  >
+                                    {pick.player.name}
+                                  </button>
+                                  <span className="text-sm text-gray-500">{pick.player.team}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-center text-gray-500 py-8">No draft data available</p>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Awards Tab */}
+                    {activeTab === 'awards' && (
+                      <div className="space-y-4">
+                        {selectedPlayerData.achievements && selectedPlayerData.achievements.length > 0 ? (
+                          <div className="space-y-6">
+                            {/* Championship Awards */}
+                            {selectedPlayerData.achievements.filter(a => ['champion', 'runner-up', 'bronze'].includes(a.type)).length > 0 && (
+                              <div>
+                                <h4 className="text-lg font-semibold mb-3 text-yellow-600 dark:text-yellow-400">🏆 Championship Awards</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {selectedPlayerData.achievements.filter(a => ['champion', 'runner-up', 'bronze'].includes(a.type)).map((achievement, index) => (
+                                    <div key={index} className="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                                      <div className="text-lg font-medium text-center">{achievement.text}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Performance Awards */}
+                            {selectedPlayerData.achievements.filter(a => ['explosive', 'high-score', 'scoring-champ', 'elite', 'perfect', 'consistent'].includes(a.type)).length > 0 && (
+                              <div>
+                                <h4 className="text-lg font-semibold mb-3 text-green-600 dark:text-green-400">⭐ Performance Awards</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {selectedPlayerData.achievements.filter(a => ['explosive', 'high-score', 'scoring-champ', 'elite', 'perfect', 'consistent'].includes(a.type)).map((achievement, index) => (
+                                    <div key={index} className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                                      <div className="text-lg font-medium text-center">{achievement.text}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Other awards... */}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8">
+                            <div className="text-4xl mb-2">🎯</div>
+                            <p className="text-gray-500">No achievements unlocked this season</p>
+                            <p className="text-sm text-gray-400 mt-2">Win games, score big, or make the playoffs to earn badges!</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Compare Tab */}
+                    {activeTab === 'compare' && (
+                      <div className="space-y-6">
+                        <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+                          <h4 className="text-lg font-semibold mb-4">League Member Comparison</h4>
+                          {selectedPlayerData.allLeagueRosters && selectedPlayerData.allLeagueRosters.length > 0 ? (
+                            <div className="space-y-4">
+                              {/* Player Selection */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Select First Player</label>
+                                  <select 
+                                    value={selectedPlayer1} 
+                                    onChange={(e) => setSelectedPlayer1(e.target.value)}
+                                    className="w-full p-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                                  >
+                                    <option value="">Choose a player...</option>
+                                    {selectedPlayerData.allLeagueRosters.map(roster => (
+                                      <option key={roster.roster_id} value={roster.roster_id.toString()}>
+                                        {roster.username}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium mb-2">Select Second Player</label>
+                                  <select 
+                                    value={selectedPlayer2} 
+                                    onChange={(e) => setSelectedPlayer2(e.target.value)}
+                                    className="w-full p-2 border rounded bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
+                                  >
+                                    <option value="">Choose a player...</option>
+                                    {selectedPlayerData.allLeagueRosters.filter(r => r.roster_id.toString() !== selectedPlayer1).map(roster => (
+                                      <option key={roster.roster_id} value={roster.roster_id.toString()}>
+                                        {roster.username}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              
+                              {/* Comparison Results */}
+                              {selectedPlayer1 && selectedPlayer2 && (() => {
+                                const player1 = selectedPlayerData.allLeagueRosters.find(r => r.roster_id.toString() === selectedPlayer1);
+                                const player2 = selectedPlayerData.allLeagueRosters.find(r => r.roster_id.toString() === selectedPlayer2);
+                                
+                                if (!player1 || !player2) return null;
+                                
+                                const player1AvgPoints = player1.points_for / Math.max(player1.wins + player1.losses, 1);
+                                const player2AvgPoints = player2.points_for / Math.max(player2.wins + player2.losses, 1);
+                                const pointDifference = Math.abs(player1.points_for - player2.points_for);
+                                
+                                return (
+                                  <div className="bg-white dark:bg-gray-800 p-6 rounded-lg">
+                                    <h5 className="text-xl font-bold mb-6 text-center">
+                                      {player1.username} vs {player2.username}
+                                    </h5>
+                                    
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                      {/* Player 1 Stats */}
+                                      <div className="space-y-4">
+                                        <h6 className="font-bold text-lg text-blue-600 text-center">{player1.username}</h6>
+                                        <div className="space-y-3">
+                                          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-blue-600 text-center">{player1.wins}-{player1.losses}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">Record</div>
+                                          </div>
+                                          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-blue-600 text-center">{player1.points_for.toFixed(1)}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">Points For</div>
+                                          </div>
+                                          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-blue-600 text-center">{player1AvgPoints.toFixed(1)}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">Avg/Game</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Head-to-Head Comparison */}
+                                      <div className="space-y-4">
+                                        <h6 className="font-bold text-lg text-gray-700 dark:text-gray-300 text-center">Head-to-Head</h6>
+                                        <div className="space-y-3">
+                                          <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg text-center">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Better Record</div>
+                                            <div className="font-bold text-lg">
+                                              {player1.wins > player2.wins ? player1.username : 
+                                               player2.wins > player1.wins ? player2.username : 'Tie'}
+                                            </div>
+                                          </div>
+                                          <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg text-center">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">More Points</div>
+                                            <div className="font-bold text-lg">
+                                              {player1.points_for > player2.points_for ? player1.username : player2.username}
+                                            </div>
+                                          </div>
+                                          <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg text-center">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Point Difference</div>
+                                            <div className="font-bold text-lg">{pointDifference.toFixed(1)}</div>
+                                          </div>
+                                          <div className="bg-gray-100 dark:bg-gray-600 p-4 rounded-lg text-center">
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Head-to-Head</div>
+                                            <div className="font-bold text-lg">0-0</div>
+                                            <div className="text-xs text-gray-500 mt-1">0 games</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Player 2 Stats */}
+                                      <div className="space-y-4">
+                                        <h6 className="font-bold text-lg text-red-600 text-center">{player2.username}</h6>
+                                        <div className="space-y-3">
+                                          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-red-600 text-center">{player2.wins}-{player2.losses}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">Record</div>
+                                          </div>
+                                          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-red-600 text-center">{player2.points_for.toFixed(1)}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">Points For</div>
+                                          </div>
+                                          <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+                                            <div className="text-2xl font-bold text-red-600 text-center">{player2AvgPoints.toFixed(1)}</div>
+                                            <div className="text-sm text-gray-600 dark:text-gray-400 text-center font-medium">Avg/Game</div>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                              
+                              {(!selectedPlayer1 || !selectedPlayer2) && (
+                                <div className="text-center py-8 text-gray-500">
+                                  Select two league members to compare their performance
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-center text-gray-500 py-8">No league data available for comparison</p>
+                          )}
+                        </div>
                       </div>
                     )}
                     
