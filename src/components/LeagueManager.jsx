@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { validateUsername, validateYear, sanitizeInput, secureApiCall } from '../utils/security';
 import { 
@@ -98,7 +98,58 @@ function LeagueManager() {
   const [showPlayerStatsPage, setShowPlayerStatsPage] = useState(false);
   const [showTradeFinder, setShowTradeFinder] = useState(false);
   const [showLeagueScouter, setShowLeagueScouter] = useState(false);
+  
+  // API cache to prevent duplicate requests
+  const [apiCache, setApiCache] = useState(new Map());
+  const [pendingRequests, setPendingRequests] = useState(new Map());
+  
+  // Lazy load heavy components
+  const LazyPlayerStatsPage = React.lazy(() => import('./PlayerStatsPage'));
+  const LazyTradeFinder = React.lazy(() => import('./TradeFinder'));
+  const LazyLeagueScouter = React.lazy(() => import('./LeagueScouter'));
 
+  // Memoized cached API call function
+  const cachedApiCall = useCallback(async (url, cacheKey = url, ttl = 300000) => { // 5 min TTL
+    const now = Date.now();
+    const cached = apiCache.get(cacheKey);
+    
+    // Return cached data if still valid
+    if (cached && (now - cached.timestamp) < ttl) {
+      return cached.data;
+    }
+    
+    // Check if request is already pending
+    if (pendingRequests.has(cacheKey)) {
+      return pendingRequests.get(cacheKey);
+    }
+    
+    // Make new request
+    const requestPromise = fetch(url).then(async (response) => {
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      
+      // Cache the result
+      setApiCache(prev => new Map(prev.set(cacheKey, { data, timestamp: now })));
+      setPendingRequests(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(cacheKey);
+        return newMap;
+      });
+      
+      return data;
+    }).catch(error => {
+      setPendingRequests(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(cacheKey);
+        return newMap;
+      });
+      throw error;
+    });
+    
+    setPendingRequests(prev => new Map(prev.set(cacheKey, requestPromise)));
+    return requestPromise;
+  }, [apiCache, pendingRequests]);
+  
   // Load saved profile data if user is logged in
   useEffect(() => {
     if (user) {
@@ -128,7 +179,7 @@ function LeagueManager() {
         });
       }
     } catch (error) {
-      console.log('No saved profile found');
+      // No saved profile found
     }
   };
 
@@ -155,7 +206,6 @@ function LeagueManager() {
     setShowingAllYears(sanitizedYear === 'all');
     
     try {
-      console.log('Fetching user:', sanitizedUsername);
       const userResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${encodeURIComponent(sanitizedUsername)}`);
       
       if (!userResponse.ok) {
@@ -163,7 +213,6 @@ function LeagueManager() {
       }
       
       const userData = await userResponse.json();
-      console.log('User data:', userData);
       
       if (!userData.user_id) {
         throw new Error('Invalid user data');
@@ -177,7 +226,6 @@ function LeagueManager() {
         
         for (let year = startYear; year <= currentYear; year++) {
           try {
-            console.log(`Fetching leagues for ${year}`);
             const leaguesResponse = await fetch(`https://api.sleeper.app/v1/user/${userData.user_id}/leagues/nfl/${year}`);
             
             if (leaguesResponse.ok) {
@@ -217,7 +265,7 @@ function LeagueManager() {
                             }
                           }
                         } catch (err) {
-                          console.log('Could not fetch playoff data');
+                          // Playoff data not available
                         }
                       }
                       
@@ -248,7 +296,7 @@ function LeagueManager() {
               }
             }
           } catch (err) {
-            console.log(`No leagues found for ${year}`);
+            // No leagues found for this year
           }
         }
         
@@ -256,7 +304,6 @@ function LeagueManager() {
         setUserData(userData);
       } else {
         // Single year logic (existing)
-        console.log('Fetching leagues for user:', userData.user_id);
         const leaguesResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${encodeURIComponent(userData.user_id)}/leagues/nfl/${encodeURIComponent(sanitizedYear)}`);
         
         if (!leaguesResponse.ok) {
@@ -264,7 +311,6 @@ function LeagueManager() {
         }
         
         const leagues = await leaguesResponse.json();
-        console.log('Leagues data:', leagues);
         
         // Fetch additional data for each league
         const enrichedLeagues = await Promise.all(
@@ -311,7 +357,7 @@ function LeagueManager() {
                     }
                   }
                 } catch (err) {
-                  console.log('Could not fetch playoff data for', league.name);
+                  // Playoff data not available
                 }
               }
               
@@ -340,7 +386,6 @@ function LeagueManager() {
       }
       
     } catch (err) {
-      console.error('Error:', err);
       setError(err.message === 'Rate limit exceeded' ? 'Too many requests. Please wait a moment.' : 'Failed to fetch data. Please try again.');
     } finally {
       setIsLoading(false);
@@ -356,24 +401,26 @@ function LeagueManager() {
     setFormData({ username: '', year: new Date().getFullYear().toString() });
   };
 
-  const fetchRosterDetails = async (league) => {
+  const fetchRosterDetails = useCallback(async (league) => {
     setLoadingRoster(true);
     setSelectedLeague(league);
     setActiveTab('overview');
     
     try {
-      // Get all players data
-      const playersResponse = await fetch('https://api.sleeper.app/v1/players/nfl');
-      const allPlayers = await playersResponse.json();
+      // Get all players data with caching
+      const allPlayers = await cachedApiCall('https://api.sleeper.app/v1/players/nfl', 'players', 3600000); // 1 hour TTL
       
-      // Get player stats for the season
-      const playerStatsResponse = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${league.season}`);
-      const playerStats = playerStatsResponse.ok ? await playerStatsResponse.json() : {};
+      // Get player stats for the season with caching
+      const playerStats = await cachedApiCall(
+        `https://api.sleeper.app/v1/stats/nfl/regular/${league.season}`,
+        `stats-${league.season}`,
+        1800000 // 30 min TTL
+      ).catch(() => ({}));
       
       // Store season stats globally for trade calculations
       window.seasonStats = playerStats;
       
-      // Fetch roster data with stats
+      // Process roster data
       const rosterWithNames = league.userRoster.players?.map(playerId => {
         const stats = playerStats[playerId] || {};
         const fantasyPoints = stats.pts_ppr || stats.pts_std || stats.pts_half_ppr || 0;
@@ -390,18 +437,17 @@ function LeagueManager() {
       // Sort roster by fantasy points (highest to lowest)
       rosterWithNames.sort((a, b) => b.fantasyPoints - a.fantasyPoints);
       
-      // Fetch transactions
-      const transactionsResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/1`);
+      // Fetch transactions with caching and batching
       let allTransactions = [];
-      if (transactionsResponse.ok) {
-        const weekTransactions = await transactionsResponse.json();
-        // Fetch all weeks (1-18)
+      try {
         const transactionPromises = [];
         for (let week = 1; week <= 18; week++) {
           transactionPromises.push(
-            fetch(`https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week}`)
-              .then(res => res.ok ? res.json() : [])
-              .catch(() => [])
+            cachedApiCall(
+              `https://api.sleeper.app/v1/league/${league.league_id}/transactions/${week}`,
+              `transactions-${league.league_id}-${week}`,
+              600000 // 10 min TTL
+            ).catch(() => [])
           );
         }
         const weeklyTransactions = await Promise.all(transactionPromises);
@@ -410,25 +456,32 @@ function LeagueManager() {
           (t.adds && Object.values(t.adds).includes(league.userRoster.roster_id)) ||
           (t.drops && Object.values(t.drops).includes(league.userRoster.roster_id))
         );
+      } catch (error) {
+        // Transactions failed to load
       }
       
-      // Fetch draft data
-      const draftResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/drafts`);
+      // Fetch draft data with caching
       let userDraftPicks = [];
-      if (draftResponse.ok) {
-        const drafts = await draftResponse.json();
+      try {
+        const drafts = await cachedApiCall(
+          `https://api.sleeper.app/v1/league/${league.league_id}/drafts`,
+          `drafts-${league.league_id}`,
+          3600000 // 1 hour TTL
+        );
         if (drafts.length > 0) {
-          const draftPicksResponse = await fetch(`https://api.sleeper.app/v1/draft/${drafts[0].draft_id}/picks`);
-          if (draftPicksResponse.ok) {
-            const allPicks = await draftPicksResponse.json();
-            userDraftPicks = allPicks.filter(pick => pick.roster_id === league.userRoster.roster_id);
-          }
+          const allPicks = await cachedApiCall(
+            `https://api.sleeper.app/v1/draft/${drafts[0].draft_id}/picks`,
+            `draft-picks-${drafts[0].draft_id}`,
+            3600000 // 1 hour TTL
+          );
+          userDraftPicks = allPicks.filter(pick => pick.roster_id === league.userRoster.roster_id);
         }
+      } catch (error) {
+        // Draft data failed to load
       }
       
       // Process transactions with player names
       const processedTransactions = allTransactions.map(transaction => {
-        // For trades, we need to check which players the user actually received vs gave up
         const userRosterId = league.userRoster.roster_id;
         const userAdds = [];
         const userDrops = [];
@@ -464,6 +517,7 @@ function LeagueManager() {
         };
       });
       
+      // Process draft picks
       const processedDraft = userDraftPicks.map(pick => ({
         ...pick,
         player: {
@@ -473,16 +527,19 @@ function LeagueManager() {
         }
       }));
       
-      // Fetch matchup data
+      // Fetch matchup data with caching
       const matchupPromises = [];
       for (let week = 1; week <= 18; week++) {
         matchupPromises.push(
-          fetch(`https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`)
-            .then(res => res.ok ? res.json() : [])
-            .catch(() => [])
+          cachedApiCall(
+            `https://api.sleeper.app/v1/league/${league.league_id}/matchups/${week}`,
+            `matchups-${league.league_id}-${week}`,
+            600000 // 10 min TTL
+          ).catch(() => [])
         );
       }
       const weeklyMatchups = await Promise.all(matchupPromises);
+      // Process matchup data
       const userMatchups = weeklyMatchups.map((week, index) => {
         const userMatchup = week.find(m => m.roster_id === league.userRoster.roster_id);
         if (!userMatchup) return null;
@@ -513,12 +570,21 @@ function LeagueManager() {
       // Calculate achievements
       const userAchievements = calculateAchievements(analytics, userMatchups, userData, league);
       
-      // Get all league rosters for comparison
-      const rostersResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`);
-      const allRosters = rostersResponse.ok ? await rostersResponse.json() : [];
-      const usersResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/users`);
-      const allUsers = usersResponse.ok ? await usersResponse.json() : [];
+      // Get all league rosters for comparison with caching
+      const [allRosters, allUsers] = await Promise.all([
+        cachedApiCall(
+          `https://api.sleeper.app/v1/league/${league.league_id}/rosters`,
+          `rosters-${league.league_id}`,
+          300000 // 5 min TTL
+        ).catch(() => []),
+        cachedApiCall(
+          `https://api.sleeper.app/v1/league/${league.league_id}/users`,
+          `users-${league.league_id}`,
+          300000 // 5 min TTL
+        ).catch(() => [])
+      ]);
       
+      // Process rosters with user info
       const rostersWithUsers = allRosters.map(roster => {
         const user = allUsers.find(u => u.user_id === roster.owner_id);
         return {
@@ -543,7 +609,7 @@ function LeagueManager() {
       // Add matchup data to rosters
       const rostersWithMatchups = rostersWithUsers.map(roster => ({
         ...roster,
-        weeklyMatchups: allWeeklyMatchups
+        weeklyMatchups: weeklyMatchups
       }));
       
       setAllLeagueRosters(rostersWithMatchups);
@@ -555,7 +621,7 @@ function LeagueManager() {
     } finally {
       setLoadingRoster(false);
     }
-  };
+  }, [cachedApiCall]);
 
   const closeModal = () => {
     setSelectedLeague(null);
@@ -3155,47 +3221,65 @@ function LeagueManager() {
       {/* Player Stats Page - Full Screen Overlay */}
       {showPlayerStatsPage && (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
-          <PlayerStatsPage 
-            onBack={() => setShowPlayerStatsPage(false)} 
-            onShowAuth={() => setShowAuth(true)}
-            onShowProfile={() => {
-              setShowPlayerStatsPage(false);
-              setShowProfile(true);
-            }}
-          />
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <LazyPlayerStatsPage 
+              onBack={() => setShowPlayerStatsPage(false)} 
+              onShowAuth={() => setShowAuth(true)}
+              onShowProfile={() => {
+                setShowPlayerStatsPage(false);
+                setShowProfile(true);
+              }}
+            />
+          </React.Suspense>
         </div>
       )}
       
       {/* Trade Finder - Full Screen Overlay */}
       {showTradeFinder && (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
-          <TradeFinder 
-            onBack={() => setShowTradeFinder(false)}
-            onShowPlayerStats={(playerId, playerName, season) => {
-              fetchPlayerStats(playerId, playerName, season);
-            }}
-            onShowTeamModal={fetchPlayerModalData}
-            onShowAuth={() => setShowAuth(true)}
-            onShowProfile={() => {
-              setShowTradeFinder(false);
-              setShowProfile(true);
-            }}
-          />
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <LazyTradeFinder 
+              onBack={() => setShowTradeFinder(false)}
+              onShowPlayerStats={(playerId, playerName, season) => {
+                fetchPlayerStats(playerId, playerName, season);
+              }}
+              onShowTeamModal={fetchPlayerModalData}
+              onShowAuth={() => setShowAuth(true)}
+              onShowProfile={() => {
+                setShowTradeFinder(false);
+                setShowProfile(true);
+              }}
+            />
+          </React.Suspense>
         </div>
       )}
       
       {/* League Scouter - Full Screen Overlay */}
       {showLeagueScouter && (
         <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
-          <LeagueScouter 
-            onBack={() => setShowLeagueScouter(false)}
-            onShowAuth={() => setShowAuth(true)}
-            onLeagueInfoClick={fetchLeagueInfo}
-            onShowProfile={() => {
-              setShowLeagueScouter(false);
-              setShowProfile(true);
-            }}
-          />
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <LazyLeagueScouter 
+              onBack={() => setShowLeagueScouter(false)}
+              onShowAuth={() => setShowAuth(true)}
+              onLeagueInfoClick={fetchLeagueInfo}
+              onShowProfile={() => {
+                setShowLeagueScouter(false);
+                setShowProfile(true);
+              }}
+            />
+          </React.Suspense>
         </div>
       )}
       

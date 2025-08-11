@@ -1115,7 +1115,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                                                             const leagueObj = {
                                                               league_id: leagueData.league_id,
                                                               name: leagueData.leagueName,
-                                                              season: leagueData.year.toString(),
+                                                              season: formData.year === 'all' ? leagueData.year.toString() : formData.year,
                                                               total_rosters: 12 // Default value
                                                             };
                                                             console.log('Calling onLeagueInfoClick with:', leagueObj);

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MainApp from './MainApp';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Auth from './components/Auth';
+import ErrorBoundary from './components/ErrorBoundary';
 
 const ThemeContext = createContext();
 
@@ -19,10 +20,22 @@ export const useTheme = () => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
-      cacheTime: 10 * 60 * 1000,
-      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      cacheTime: 30 * 60 * 1000, // 30 minutes
+      retry: (failureCount, error) => {
+        // Don't retry on 4xx errors
+        if (error?.status >= 400 && error?.status < 500) {
+          return false;
+        }
+        return failureCount < 2;
+      },
       refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+      // Enable background refetching for better UX
+      refetchInterval: 10 * 60 * 1000, // 10 minutes for active queries
+    },
+    mutations: {
+      retry: 1,
     },
   },
 });
@@ -55,11 +68,13 @@ function AppContent() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

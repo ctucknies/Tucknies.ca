@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { TrophyIcon } from '@heroicons/react/24/outline';
 
-const LeagueCard = ({ 
+const LeagueCard = React.memo(({ 
   league, 
   userData, 
   onRosterClick, 
@@ -115,6 +115,6 @@ const LeagueCard = ({
       </div>
     </motion.div>
   );
-};
+});
 
 export default LeagueCard;
