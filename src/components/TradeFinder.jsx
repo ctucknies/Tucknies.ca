@@ -12,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import Auth from './Auth';
 import PositionPlayersModal from './PositionPlayersModal';
+import TradeCrafterModal from './TradeCrafterModal';
 
 function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth }) {
   const { user } = useAuth();
@@ -32,6 +33,8 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [positionWeights, setPositionWeights] = useState({ QB: 0.625, RB: 1.0, WR: 0.95, TE: 1.05 });
   const defaultWeights = { QB: 0.625, RB: 1.0, WR: 0.95, TE: 1.05 };
+  const [showTradeCrafter, setShowTradeCrafter] = useState(false);
+  const [selectedTrade, setSelectedTrade] = useState(null);
 
   const loadAllPlayers = async () => {
     try {
@@ -488,8 +491,48 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
     setSelectedPositionData(null);
   };
 
+  const handleTradeClick = (trade) => {
+    setSelectedTrade(trade);
+    setShowTradeCrafter(true);
+  };
+
+  const closeTradeCrafter = () => {
+    setShowTradeCrafter(false);
+    setSelectedTrade(null);
+  };
+
   const getPositionScarcity = (position) => {
     return positionWeights[position] || 1.0;
+  };
+
+  const findLikelyDroppedPlayer = (team) => {
+    const allPlayers = [];
+    ['QB', 'RB', 'WR', 'TE'].forEach(pos => {
+      const players = team.players[pos.toLowerCase() + 's'] || [];
+      players.forEach(player => {
+        allPlayers.push({ ...player, position: pos, adjustedValue: player.fantasyPoints * getPositionScarcity(pos) });
+      });
+    });
+    
+    // Sort by adjusted value and return the lowest
+    allPlayers.sort((a, b) => a.adjustedValue - b.adjustedValue);
+    return allPlayers[0] || null;
+  };
+
+  const calculateBestPlayerBonus = (team1Gives, team2Gives, tradeType = '1-for-1') => {
+    const allPlayers = [...team1Gives, ...team2Gives];
+    const bestPlayer = allPlayers.reduce((best, current) => 
+      current.adjustedValue > best.adjustedValue ? current : best
+    );
+    
+    const bonusValue = tradeType === '1-for-1' ? 1.0 : 3.0;
+    const team1HasBest = team1Gives.some(give => give.player.id === bestPlayer.player.id);
+    return {
+      team1Bonus: team1HasBest ? bonusValue : 0,
+      team2Bonus: team1HasBest ? 0 : bonusValue,
+      bestPlayer: bestPlayer.player,
+      bonusValue
+    };
   };
 
   const resetWeights = () => {
@@ -599,8 +642,12 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
     const simulation = simulateTrade(team1, team2, team1Gives, team2Gives);
     if (!simulation.valid) return null;
 
-    const team1Value = team1Player.fantasyPoints * getPositionScarcity(pos1);
-    const team2Value = team2Player.fantasyPoints * getPositionScarcity(pos2);
+    const team1Give = { player: team1Player, position: pos1, adjustedValue: team1Player.fantasyPoints * getPositionScarcity(pos1) };
+    const team2Give = { player: team2Player, position: pos2, adjustedValue: team2Player.fantasyPoints * getPositionScarcity(pos2) };
+    
+    const bonus = calculateBestPlayerBonus([team1Give], [team2Give], '1-for-1');
+    const team1Value = team1Give.adjustedValue + bonus.team1Bonus;
+    const team2Value = team2Give.adjustedValue + bonus.team2Bonus;
     const valueDiff = Math.abs(team1Value - team2Value);
     
     // If value gap is 2+, try to create a 2-for-1 trade instead
@@ -651,8 +698,9 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
       type: '1-for-1',
       team1: isTeam1User ? team1.teamName : team2.teamName,
       team2: isTeam1User ? team2.teamName : team1.teamName,
-      team1Gives: isTeam1User ? [{ player: team1Player, position: pos1, adjustedValue: team1Value }] : [{ player: team2Player, position: pos2, adjustedValue: team2Value }],
-      team2Gives: isTeam1User ? [{ player: team2Player, position: pos2, adjustedValue: team2Value }] : [{ player: team1Player, position: pos1, adjustedValue: team1Value }],
+      team1Gives: isTeam1User ? [team1Give] : [team2Give],
+      team2Gives: isTeam1User ? [team2Give] : [team1Give],
+      bestPlayerBonus: bonus,
       valueDifference: valueDiff,
       fairness: valueDiff <= 1 ? 'Fair' : valueDiff <= 1.5 ? 'Good' : 'Moderate'
     };
@@ -684,9 +732,15 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
     const simulation = simulateTrade(givingTeam, receivingTeam, givingTeamGives, receivingTeamGives);
     if (!simulation.valid) return null;
 
-    const givingValue = (player1.fantasyPoints * getPositionScarcity(givingPositions[0])) + 
-                       (player2.fantasyPoints * getPositionScarcity(givingPositions[1]));
-    const receivingValue = receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition);
+    const givingTeamGivesWithValues = [
+      { player: player1, position: givingPositions[0], adjustedValue: player1.fantasyPoints * getPositionScarcity(givingPositions[0]) },
+      { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
+    ];
+    const receivingTeamGivesWithValues = [{ player: receivingPlayer, position: receivingPosition, adjustedValue: receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition) }];
+    
+    const bonus = calculateBestPlayerBonus(givingTeamGivesWithValues, receivingTeamGivesWithValues, '2-for-1');
+    const givingValue = givingTeamGivesWithValues.reduce((sum, give) => sum + give.adjustedValue, 0) + bonus.team1Bonus;
+    const receivingValue = receivingTeamGivesWithValues.reduce((sum, give) => sum + give.adjustedValue, 0) + bonus.team2Bonus;
     const valueDiff = Math.abs(givingValue - receivingValue);
     
     // Reject trades that are too one-sided (value difference > 8 points)
@@ -696,20 +750,20 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
     // The receiving player should be worth at least 80% of the combined giving value
     if (receivingValue < givingValue * 0.8) return null;
 
+    // Find likely dropped player for the team receiving multiple players
+    const receivingTeamDropped = findLikelyDroppedPlayer(receivingTeam);
+    
     // Always put user's team first
     const isGivingUser = givingTeam.teamName === userTeamName;
     return {
       type: '2-for-1',
       team1: isGivingUser ? givingTeam.teamName : receivingTeam.teamName,
       team2: isGivingUser ? receivingTeam.teamName : givingTeam.teamName,
-      team1Gives: isGivingUser ? [
-        { player: player1, position: givingPositions[0], adjustedValue: player1.fantasyPoints * getPositionScarcity(givingPositions[0]) },
-        { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
-      ] : [{ player: receivingPlayer, position: receivingPosition, adjustedValue: receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition) }],
-      team2Gives: isGivingUser ? [{ player: receivingPlayer, position: receivingPosition, adjustedValue: receivingPlayer.fantasyPoints * getPositionScarcity(receivingPosition) }] : [
-        { player: player1, position: givingPositions[0], adjustedValue: player1.fantasyPoints * getPositionScarcity(givingPositions[0]) },
-        { player: player2, position: givingPositions[1], adjustedValue: player2.fantasyPoints * getPositionScarcity(givingPositions[1]) }
-      ],
+      team1Gives: isGivingUser ? givingTeamGivesWithValues : receivingTeamGivesWithValues,
+      team2Gives: isGivingUser ? receivingTeamGivesWithValues : givingTeamGivesWithValues,
+      bestPlayerBonus: bonus,
+      likelyDropped: isGivingUser ? null : receivingTeamDropped,
+      team2Dropped: isGivingUser ? receivingTeamDropped : null,
       valueDifference: valueDiff,
       fairness: valueDiff <= 2 ? 'Fair' : valueDiff <= 5 ? 'Good' : 'Moderate'
     };
@@ -748,30 +802,38 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
     const simulation = simulateTrade(givingTeam, receivingTeam, givingTeamGives, receivingTeamGives);
     if (!simulation.valid) return null;
 
-    const givingValue = givingPlayers.reduce((sum, player, idx) => 
-      sum + (player.fantasyPoints * getPositionScarcity(givingPositions[idx])), 0);
-    const receivingValue = receivingPlayers.reduce((sum, player, idx) => 
-      sum + (player.fantasyPoints * getPositionScarcity(receivingPositions[idx])), 0);
+    const givingTeamGivesWithValues = givingPlayers.map((player, idx) => ({ 
+      player, 
+      position: givingPositions[idx], 
+      adjustedValue: player.fantasyPoints * getPositionScarcity(givingPositions[idx]) 
+    }));
+    const receivingTeamGivesWithValues = receivingPlayers.map((player, idx) => ({ 
+      player, 
+      position: receivingPositions[idx], 
+      adjustedValue: player.fantasyPoints * getPositionScarcity(receivingPositions[idx]) 
+    }));
+    
+    const bonus = calculateBestPlayerBonus(givingTeamGivesWithValues, receivingTeamGivesWithValues, '3-for-2');
+    const givingValue = givingTeamGivesWithValues.reduce((sum, give) => sum + give.adjustedValue, 0) + bonus.team1Bonus;
+    const receivingValue = receivingTeamGivesWithValues.reduce((sum, give) => sum + give.adjustedValue, 0) + bonus.team2Bonus;
     const valueDiff = Math.abs(givingValue - receivingValue);
     
     if (valueDiff > 10) return null;
     if (receivingValue < givingValue * 0.75) return null;
 
+    // Find likely dropped player for the team receiving more players
+    const receivingTeamDropped = findLikelyDroppedPlayer(receivingTeam);
+    
     const isGivingUser = givingTeam.teamName === userTeamName;
     return {
       type: '3-for-2',
       team1: isGivingUser ? givingTeam.teamName : receivingTeam.teamName,
       team2: isGivingUser ? receivingTeam.teamName : givingTeam.teamName,
-      team1Gives: isGivingUser ? givingTeamGives.map((give, idx) => ({ 
-        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(givingPositions[idx]) 
-      })) : receivingTeamGives.map((give, idx) => ({ 
-        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(receivingPositions[idx]) 
-      })),
-      team2Gives: isGivingUser ? receivingTeamGives.map((give, idx) => ({ 
-        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(receivingPositions[idx]) 
-      })) : givingTeamGives.map((give, idx) => ({ 
-        ...give, adjustedValue: give.player.fantasyPoints * getPositionScarcity(givingPositions[idx]) 
-      })),
+      team1Gives: isGivingUser ? givingTeamGivesWithValues : receivingTeamGivesWithValues,
+      team2Gives: isGivingUser ? receivingTeamGivesWithValues : givingTeamGivesWithValues,
+      bestPlayerBonus: bonus,
+      likelyDropped: isGivingUser ? null : receivingTeamDropped,
+      team2Dropped: isGivingUser ? receivingTeamDropped : null,
       valueDifference: valueDiff,
       fairness: valueDiff <= 3 ? 'Fair' : valueDiff <= 6 ? 'Good' : 'Moderate'
     };
@@ -909,7 +971,11 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
             </h2>
             <div className="space-y-4">
               {tradeMatches.map((trade, index) => (
-                <div key={index} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200">
+                <div 
+                  key={index} 
+                  onClick={() => handleTradeClick(trade)}
+                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                >
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <button 
@@ -987,7 +1053,44 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
                       </div>
                     </div>
                   </div>
-
+                  
+                  {/* Best Player Bonus */}
+                  {trade.bestPlayerBonus && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                      <div className="text-xs text-gray-500 mb-1">Best Player Bonus (+{trade.bestPlayerBonus.bonusValue} pts):</div>
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs">
+                        <button
+                          onClick={() => handlePlayerClick(trade.bestPlayerBonus.bestPlayer)}
+                          className="font-medium hover:text-blue-600 transition-colors text-yellow-800 dark:text-yellow-200"
+                        >
+                          {trade.bestPlayerBonus.bestPlayer.full_name}
+                        </button>
+                        <span className="text-gray-500 ml-1">({trade.bestPlayerBonus.bestPlayer.position})</span>
+                        <div className="text-yellow-700 dark:text-yellow-300 font-medium">
+                          Highest value player in trade
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Likely Dropped Player */}
+                  {(trade.likelyDropped || trade.team2Dropped) && (
+                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                      <div className="text-xs text-gray-500 mb-1">Likely to be dropped:</div>
+                      <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-xs">
+                        <button
+                          onClick={() => handlePlayerClick(trade.likelyDropped || trade.team2Dropped)}
+                          className="font-medium hover:text-blue-600 transition-colors"
+                        >
+                          {(trade.likelyDropped || trade.team2Dropped).full_name}
+                        </button>
+                        <span className="text-gray-500 ml-1">({(trade.likelyDropped || trade.team2Dropped).position})</span>
+                        <div className="text-gray-600">
+                          {((trade.likelyDropped || trade.team2Dropped).fantasyPoints * getPositionScarcity((trade.likelyDropped || trade.team2Dropped).position)).toFixed(1)} pts
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -1083,6 +1186,18 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
         onPlayerClick={handlePlayerClick}
         positionScore={selectedPositionData?.positionScore || 0}
         scoreCalculation={selectedPositionData?.scoreCalculation}
+      />
+
+      {/* Trade Crafter Modal */}
+      <TradeCrafterModal
+        isOpen={showTradeCrafter}
+        onClose={closeTradeCrafter}
+        initialTrade={selectedTrade}
+        teamStrengths={teamStrengths}
+        getPositionScarcity={getPositionScarcity}
+        simulateTrade={simulateTrade}
+        onPlayerClick={handlePlayerClick}
+        positionWeights={positionWeights}
       />
     </div>
   );
