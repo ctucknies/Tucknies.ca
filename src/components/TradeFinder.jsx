@@ -14,7 +14,7 @@ import Auth from './Auth';
 import PositionPlayersModal from './PositionPlayersModal';
 import TradeCrafterModal from './TradeCrafterModal';
 
-function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth }) {
+function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, onShowProfile }) {
   const { user } = useAuth();
   const [selectedLeague, setSelectedLeague] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
@@ -35,6 +35,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
   const defaultWeights = { QB: 0.625, RB: 1.0, WR: 0.95, TE: 1.05 };
   const [showTradeCrafter, setShowTradeCrafter] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState(null);
+  const [hasSleeperUsername, setHasSleeperUsername] = useState(false);
 
   const loadAllPlayers = async () => {
     try {
@@ -66,6 +67,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
         .single();
       
       if (data?.sleeper_username) {
+        setHasSleeperUsername(true);
         const userResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${data.sleeper_username}`);
         const userData = await userResponse.json();
         
@@ -77,9 +79,12 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
           name: league.name,
           total_rosters: league.total_rosters
         })));
+      } else {
+        setHasSleeperUsername(false);
       }
     } catch (err) {
       console.error('Error loading leagues:', err);
+      setHasSleeperUsername(false);
     } finally {
       setLoadingLeagues(false);
     }
@@ -96,8 +101,8 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
     loadPlayerStats(selectedYear);
   }, [selectedYear]);
 
-  // Don't render main content if not authenticated
-  if (!user) {
+  // Don't render main content if not authenticated or no sleeper username
+  if (!user || !hasSleeperUsername) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
         <div className="max-w-7xl mx-auto p-6 sm:p-8">
@@ -118,7 +123,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
                   Trade Finder
                 </h1>
                 <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
-                  Please log in to access the Trade Finder
+                  {!user ? 'Please log in to access the Trade Finder' : 'Please add your Sleeper username to access the Trade Finder'}
                 </p>
               </div>
             </div>
@@ -130,21 +135,25 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth })
             transition={{ delay: 0.1 }}
             className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
           >
-            <h2 className="text-xl font-bold mb-4">Authentication Required</h2>
+            <h2 className="text-xl font-bold mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              You need to be logged in to use the Trade Finder feature.
+              {!user 
+                ? 'You need to be logged in to use the Trade Finder feature.'
+                : 'You need to add your Sleeper username in your profile to use this feature.'}
             </p>
             <button
               onClick={() => {
-                if (onShowAuth) {
+                if (!user && onShowAuth) {
                   onShowAuth();
+                } else if (onShowProfile) {
+                  onShowProfile();
                 } else {
                   onBack();
                 }
               }}
               className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
-              Go Back to Sign In
+              {!user ? 'Go Back to Sign In' : 'Add Sleeper Username'}
             </button>
           </motion.div>
         </div>

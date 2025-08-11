@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeftIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
-const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick }) => {
+const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile }) => {
   const { user } = useAuth();
   const [formData, setFormData] = useState({ 
     username: '', 
@@ -18,7 +19,31 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick }) => {
   const [memberSortConfig, setMemberSortConfig] = useState({ key: 'championships', direction: 'desc' });
   const [expandedUser, setExpandedUser] = useState(null);
   const [expandedUserData, setExpandedUserData] = useState({});
+  const [hasSleeperUsername, setHasSleeperUsername] = useState(false);
 
+
+  const checkSleeperUsername = async () => {
+    if (!user) {
+      setHasSleeperUsername(false);
+      return;
+    }
+    
+    try {
+      const { data } = await supabase
+        .from('profiles')
+        .select('sleeper_username')
+        .eq('id', user.id)
+        .single();
+      
+      setHasSleeperUsername(!!data?.sleeper_username);
+    } catch (error) {
+      setHasSleeperUsername(false);
+    }
+  };
+
+  useEffect(() => {
+    checkSleeperUsername();
+  }, [user]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -417,7 +442,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick }) => {
     setExpandedUserData({});
   };
 
-  if (!user) {
+  if (!user || !hasSleeperUsername) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
         <div className="max-w-7xl mx-auto p-6 sm:p-8">
@@ -438,7 +463,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick }) => {
                   League Scouter
                 </h1>
                 <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
-                  Please log in to access the League Scouter
+                  {!user ? 'Please log in to access the League Scouter' : 'Please add your Sleeper username to access the League Scouter'}
                 </p>
               </div>
             </div>
@@ -450,21 +475,25 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick }) => {
             transition={{ delay: 0.1 }}
             className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
           >
-            <h2 className="text-xl font-bold mb-4">Authentication Required</h2>
+            <h2 className="text-xl font-bold mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              You need to be logged in to use the League Scouter feature.
+              {!user 
+                ? 'You need to be logged in to use the League Scouter feature.'
+                : 'You need to add your Sleeper username in your profile to use this feature.'}
             </p>
             <button
               onClick={() => {
-                if (onShowAuth) {
+                if (!user && onShowAuth) {
                   onShowAuth();
+                } else if (user && onShowProfile) {
+                  onShowProfile();
                 } else {
                   onBack();
                 }
               }}
               className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
             >
-              Go Back to Sign In
+              {!user ? 'Go Back to Sign In' : 'Add Sleeper Username'}
             </button>
           </motion.div>
         </div>

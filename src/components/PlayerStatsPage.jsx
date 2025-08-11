@@ -15,7 +15,7 @@ import PlayerComparisonModal from './league/PlayerComparisonModal';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
-function PlayerStatsPage({ onBack, onShowAuth }) {
+function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -41,6 +41,7 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
   const [showFilters, setShowFilters] = useState(true);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
+  const [hasSleeperUsername, setHasSleeperUsername] = useState(false);
 
   const [showPlayerStats, setShowPlayerStats] = useState(false);
   const [playerStatsData, setPlayerStatsData] = useState(null);
@@ -88,10 +89,14 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
       
       if (data?.sleeper_username) {
         setSleeperUsername(data.sleeper_username);
+        setHasSleeperUsername(true);
         syncUserLeagues(data.sleeper_username);
+      } else {
+        setHasSleeperUsername(false);
       }
     } catch (error) {
       console.log('No saved profile found');
+      setHasSleeperUsername(false);
     }
   };
 
@@ -487,6 +492,65 @@ function PlayerStatsPage({ onBack, onShowAuth }) {
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
   };
+
+  if (!user || !hasSleeperUsername) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+        <div className="max-w-7xl mx-auto p-6 sm:p-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-8"
+          >
+            <div className="flex items-center gap-4 mb-6">
+              <button
+                onClick={onBack}
+                className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+              >
+                <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              </button>
+              <div>
+                <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                  Player Statistics
+                </h1>
+                <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+                  {!user ? 'Please log in to access Player Statistics' : 'Please add your Sleeper username to access Player Statistics'}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
+          >
+            <h2 className="text-xl font-bold mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">
+              {!user 
+                ? 'You need to be logged in to use the Player Statistics feature.'
+                : 'You need to add your Sleeper username in your profile to use this feature.'}
+            </p>
+            <button
+              onClick={() => {
+                if (!user && onShowAuth) {
+                  onShowAuth();
+                } else if (onShowProfile) {
+                  onShowProfile();
+                } else {
+                  onBack();
+                }
+              }}
+              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            >
+              {!user ? 'Go Back to Sign In' : 'Add Sleeper Username'}
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20 overflow-y-auto">

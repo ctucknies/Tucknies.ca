@@ -3110,6 +3110,10 @@ function LeagueManager() {
           <PlayerStatsPage 
             onBack={() => setShowPlayerStatsPage(false)} 
             onShowAuth={() => setShowAuth(true)}
+            onShowProfile={() => {
+              setShowPlayerStatsPage(false);
+              setShowProfile(true);
+            }}
           />
         </div>
       )}
@@ -3124,6 +3128,10 @@ function LeagueManager() {
             }}
             onShowTeamModal={fetchPlayerModalData}
             onShowAuth={() => setShowAuth(true)}
+            onShowProfile={() => {
+              setShowTradeFinder(false);
+              setShowProfile(true);
+            }}
           />
         </div>
       )}
@@ -3135,6 +3143,10 @@ function LeagueManager() {
             onBack={() => setShowLeagueScouter(false)}
             onShowAuth={() => setShowAuth(true)}
             onLeagueInfoClick={fetchLeagueInfo}
+            onShowProfile={() => {
+              setShowLeagueScouter(false);
+              setShowProfile(true);
+            }}
           />
         </div>
       )}
