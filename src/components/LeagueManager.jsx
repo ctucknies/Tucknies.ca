@@ -15,7 +15,8 @@ import {
   Bars3Icon,
   Cog6ToothIcon,
   BellIcon,
-  QuestionMarkCircleIcon
+  QuestionMarkCircleIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import Auth from './Auth';
@@ -29,6 +30,7 @@ import TradeHistorySection from './league/TradeHistorySection';
 import MatchupSection from './league/MatchupSection';
 import PlayerStatsPage from './PlayerStatsPage';
 import TradeFinder from './TradeFinder';
+import LeagueScouter from './LeagueScouter';
 import { calculatePlacement, calculateWinStreak, calculateAchievements } from './league/utils';
 
 function LeagueManager() {
@@ -81,6 +83,7 @@ function LeagueManager() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showPlayerStatsPage, setShowPlayerStatsPage] = useState(false);
   const [showTradeFinder, setShowTradeFinder] = useState(false);
+  const [showLeagueScouter, setShowLeagueScouter] = useState(false);
 
   // Load saved profile data if user is logged in
   useEffect(() => {
@@ -1243,6 +1246,13 @@ function LeagueManager() {
             >
               <ArrowsRightLeftIcon className="w-5 h-5" />
               <span className="font-medium">Trade Finder</span>
+            </button>
+            <button 
+              onClick={() => setShowLeagueScouter(true)}
+              className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+            >
+              <MagnifyingGlassIcon className="w-5 h-5" />
+              <span className="font-medium">League Scouter</span>
             </button>
             <button className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors">
               <UserIcon className="w-5 h-5" />
@@ -3123,6 +3133,16 @@ function LeagueManager() {
               fetchPlayerStats(playerId, playerName, season);
             }}
             onShowTeamModal={fetchPlayerModalData}
+            onShowAuth={() => setShowAuth(true)}
+          />
+        </div>
+      )}
+      
+      {/* League Scouter - Full Screen Overlay */}
+      {showLeagueScouter && (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
+          <LeagueScouter 
+            onBack={() => setShowLeagueScouter(false)}
             onShowAuth={() => setShowAuth(true)}
           />
         </div>

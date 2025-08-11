@@ -41,7 +41,12 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.16",
+    "nth-check": "^2.1.1",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.3.5"
+  },
+  "overrides": {},
+  "resolutions": {
+    "nth-check": "^2.0.1"
   }
 }
