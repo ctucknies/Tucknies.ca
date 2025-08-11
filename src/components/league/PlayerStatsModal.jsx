@@ -504,7 +504,8 @@ const PlayerStatsModal = ({
                     <div className="space-y-2">
                       {(() => {
                         const yearsWithGames = Object.entries(allYearStats).filter(([year, data]) => (data.stats.gp || 0) > 0);
-                        const rookieYear = yearsWithGames.length > 0 ? Math.min(...yearsWithGames.map(([year]) => parseInt(year))) : null;
+                        const has2020Stats = allYearStats['2020'] && (allYearStats['2020'].stats.gp || 0) > 0;
+                        const rookieYear = !has2020Stats && yearsWithGames.length > 0 ? Math.min(...yearsWithGames.map(([year]) => parseInt(year))) : null;
                         return yearsWithGames.sort(([a], [b]) => parseInt(b) - parseInt(a)).map(([year, data]) => (
                         <div key={year} className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                           <div className="flex justify-between items-center mb-2">

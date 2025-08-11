@@ -19,6 +19,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
   const [memberSortConfig, setMemberSortConfig] = useState({ key: 'championships', direction: 'desc' });
   const [expandedUser, setExpandedUser] = useState(null);
   const [expandedUserData, setExpandedUserData] = useState({});
+  const [breakdownSortConfig, setBreakdownSortConfig] = useState({ key: 'year', direction: 'desc' });
   const [hasSleeperUsername, setHasSleeperUsername] = useState(false);
 
 
@@ -423,10 +424,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
       
       setExpandedUserData(prev => ({
         ...prev,
-        [member.user_id]: leagueData.sort((a, b) => 
-          (b.isChampion ? 1 : 0) - (a.isChampion ? 1 : 0) || 
-          b.wins - a.wins
-        )
+        [member.user_id]: leagueData
       }));
     } catch {}
   };
@@ -440,6 +438,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
     setFilterConfig({ minLeagues: '', minChampionships: '', minWins: '' });
     setMemberSortConfig({ key: 'championships', direction: 'desc' });
     setExpandedUserData({});
+    setBreakdownSortConfig({ key: 'year', direction: 'desc' });
   };
 
   if (!user || !hasSleeperUsername) {
@@ -868,7 +867,69 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                                   const newExpandedUser = expandedUser === member.user_id ? null : member.user_id;
                                   setExpandedUser(newExpandedUser);
                                   if (newExpandedUser && !expandedUserData[member.user_id]) {
-                                    await loadUserBreakdown(member);
+                                    if (member.user_id === 'searched_user') {
+                                      // For searched user, convert results data to breakdown format
+                                      const searchedUserBreakdown = [];
+                                      for (const yearResult of results) {
+                                        // Get leagues for this year from the original search
+                                        try {
+                                          const userResponse = await fetch(`https://api.sleeper.app/v1/user/${formData.username}`);
+                                          const userData = await userResponse.json();
+                                          const leaguesResponse = await fetch(`https://api.sleeper.app/v1/user/${userData.user_id}/leagues/nfl/${yearResult.year}`);
+                                          const leagues = await leaguesResponse.json();
+                                          
+                                          for (const league of leagues) {
+                                            const rostersResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/rosters`);
+                                            const rosters = await rostersResponse.json();
+                                            const userRoster = rosters.find(r => r.owner_id === userData.user_id);
+                                            
+                                            if (userRoster) {
+                                              let isChampion = false;
+                                              if (league.status === 'complete') {
+                                                try {
+                                                  const playoffResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/winners_bracket`);
+                                                  if (playoffResponse.ok) {
+                                                    const playoffs = await playoffResponse.json();
+                                                    if (playoffs?.length > 0) {
+                                                      const finalMatch = playoffs.reduce((max, match) => match.r > max.r ? match : max, playoffs[0]);
+                                                      isChampion = finalMatch?.w === userRoster.roster_id;
+                                                    }
+                                                  }
+                                                } catch {}
+                                              }
+                                              
+                                              const wins = userRoster.settings?.wins || 0;
+                                              const losses = userRoster.settings?.losses || 0;
+                                              const ties = userRoster.settings?.ties || 0;
+                                              const pointsFor = userRoster.settings?.fpts || 0;
+                                              const pointsAgainst = userRoster.settings?.fpts_against || 0;
+                                              
+                                              searchedUserBreakdown.push({
+                                                year: yearResult.year,
+                                                leagueName: league.name,
+                                                league_id: league.league_id,
+                                                wins,
+                                                losses,
+                                                ties,
+                                                isChampion,
+                                                pointsFor,
+                                                pointsAgainst,
+                                                winPercentage: wins + losses > 0 ? (wins / (wins + losses) * 100).toFixed(1) : '0.0',
+                                                avgPointsPerGame: wins + losses > 0 ? (pointsFor / (wins + losses)).toFixed(1) : '0.0',
+                                                pointsDiff: pointsFor - pointsAgainst
+                                              });
+                                            }
+                                          }
+                                        } catch {}
+                                      }
+                                      
+                                      setExpandedUserData(prev => ({
+                                        ...prev,
+                                        [member.user_id]: searchedUserBreakdown
+                                      }));
+                                    } else {
+                                      await loadUserBreakdown(member);
+                                    }
                                   }
                                 }}
                                 className={`border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer ${
@@ -950,17 +1011,99 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                                             <table className="w-full text-sm">
                                               <thead>
                                                 <tr className="bg-gray-100 dark:bg-gray-600">
-                                                  <th className="text-left py-2 px-3 font-semibold">Year</th>
-                                                  <th className="text-left py-2 px-3 font-semibold">League Name</th>
-                                                  <th className="text-center py-2 px-3 font-semibold">Record</th>
-                                                  <th className="text-center py-2 px-3 font-semibold">Champion</th>
-                                                  <th className="text-center py-2 px-3 font-semibold">Win %</th>
-                                                  <th className="text-center py-2 px-3 font-semibold">Avg/Game</th>
-                                                  <th className="text-center py-2 px-3 font-semibold">+/-</th>
+                                                  <th className="text-left py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'year' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'year', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      Year {breakdownSortConfig.key === 'year' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
+                                                  <th className="text-left py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'leagueName' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'leagueName', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      League Name {breakdownSortConfig.key === 'leagueName' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
+                                                  <th className="text-center py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'wins' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'wins', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      Record {breakdownSortConfig.key === 'wins' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
+                                                  <th className="text-center py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'isChampion' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'isChampion', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      Champion {breakdownSortConfig.key === 'isChampion' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
+                                                  <th className="text-center py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'winPercentage' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'winPercentage', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      Win % {breakdownSortConfig.key === 'winPercentage' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
+                                                  <th className="text-center py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'avgPointsPerGame' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'avgPointsPerGame', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      Avg/Game {breakdownSortConfig.key === 'avgPointsPerGame' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
+                                                  <th className="text-center py-2 px-3 font-semibold">
+                                                    <button onClick={() => {
+                                                      const direction = breakdownSortConfig.key === 'pointsDiff' && breakdownSortConfig.direction === 'desc' ? 'asc' : 'desc';
+                                                      setBreakdownSortConfig({ key: 'pointsDiff', direction });
+                                                    }} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
+                                                      +/- {breakdownSortConfig.key === 'pointsDiff' && (breakdownSortConfig.direction === 'desc' ? '↓' : '↑')}
+                                                    </button>
+                                                  </th>
                                                 </tr>
                                               </thead>
                                               <tbody>
-                                                {expandedUserData[member.user_id].map((leagueData, idx) => (
+                                                {[...expandedUserData[member.user_id]].sort((a, b) => {
+                                                  // First sort by championship (champions first)
+                                                  const aChamp = a.isChampion ? 1 : 0;
+                                                  const bChamp = b.isChampion ? 1 : 0;
+                                                  if (aChamp !== bChamp) {
+                                                    return bChamp - aChamp;
+                                                  }
+                                                  
+                                                  // Then sort by year (newest first)
+                                                  if (a.year !== b.year) {
+                                                    return b.year - a.year;
+                                                  }
+                                                  
+                                                  // Finally apply user-selected sorting
+                                                  let aValue = a[breakdownSortConfig.key];
+                                                  let bValue = b[breakdownSortConfig.key];
+                                                  
+                                                  if (breakdownSortConfig.key === 'winPercentage' || breakdownSortConfig.key === 'avgPointsPerGame') {
+                                                    aValue = parseFloat(aValue);
+                                                    bValue = parseFloat(bValue);
+                                                  } else if (breakdownSortConfig.key === 'isChampion') {
+                                                    aValue = aValue ? 1 : 0;
+                                                    bValue = bValue ? 1 : 0;
+                                                  } else if (breakdownSortConfig.key === 'leagueName') {
+                                                    aValue = aValue.toLowerCase();
+                                                    bValue = bValue.toLowerCase();
+                                                  }
+                                                  
+                                                  if (breakdownSortConfig.direction === 'asc') {
+                                                    return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+                                                  } else {
+                                                    return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
+                                                  }
+                                                }).map((leagueData, idx) => (
                                                   <tr key={`${leagueData.year}-${leagueData.leagueName}-${idx}`} className="border-b border-gray-200 dark:border-gray-600">
                                                     <td className="py-2 px-3 font-medium">{leagueData.year}</td>
                                                     <td className="py-2 px-3">

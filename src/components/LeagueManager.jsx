@@ -2427,7 +2427,15 @@ function LeagueManager() {
                                           <div className="space-y-1">
                                             {participant.acquired.length > 0 ? participant.acquired.map(player => (
                                               <div key={player.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded flex justify-between">
-                                                <span className="font-medium">{player.name}</span>
+                                                <button 
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    fetchPlayerStats(player.id, player.name, leagueInfoData.league.season);
+                                                  }}
+                                                  className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                                >
+                                                  {player.name}
+                                                </button>
                                                 <span className="text-gray-500">({player.position})</span>
                                               </div>
                                             )) : (
@@ -2442,7 +2450,15 @@ function LeagueManager() {
                                           <div className="space-y-1">
                                             {participant.traded.length > 0 ? participant.traded.map(player => (
                                               <div key={player.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded flex justify-between">
-                                                <span className="font-medium">{player.name}</span>
+                                                <button 
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    fetchPlayerStats(player.id, player.name, leagueInfoData.league.season);
+                                                  }}
+                                                  className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                                >
+                                                  {player.name}
+                                                </button>
                                                 <span className="text-gray-500">({player.position})</span>
                                               </div>
                                             )) : (
@@ -2463,7 +2479,15 @@ function LeagueManager() {
                                     <div className="space-y-1">
                                       {trade.adds.map(player => (
                                         <div key={player.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded flex justify-between">
-                                          <span className="font-medium">{player.name}</span>
+                                          <button 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              fetchPlayerStats(player.id, player.name, leagueInfoData.league.season);
+                                            }}
+                                            className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                          >
+                                            {player.name}
+                                          </button>
                                           <span className="text-gray-500">({player.position})</span>
                                         </div>
                                       ))}
@@ -2476,7 +2500,15 @@ function LeagueManager() {
                                     <div className="space-y-1">
                                       {trade.drops.map(player => (
                                         <div key={player.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded flex justify-between">
-                                          <span className="font-medium">{player.name}</span>
+                                          <button 
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              fetchPlayerStats(player.id, player.name, leagueInfoData.league.season);
+                                            }}
+                                            className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                          >
+                                            {player.name}
+                                          </button>
                                           <span className="text-gray-500">({player.position})</span>
                                         </div>
                                       ))}
@@ -2572,7 +2604,15 @@ function LeagueManager() {
                                   <div className="space-y-1">
                                     {waiver.adds.map(player => (
                                       <div key={player.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded flex justify-between">
-                                        <span className="font-medium">{player.name}</span>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            fetchPlayerStats(player.id, player.name, leagueInfoData.league.season);
+                                          }}
+                                          className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                        >
+                                          {player.name}
+                                        </button>
                                         <span className="text-gray-500">({player.position})</span>
                                       </div>
                                     ))}
@@ -2585,7 +2625,15 @@ function LeagueManager() {
                                   <div className="space-y-1">
                                     {waiver.drops.map(player => (
                                       <div key={player.id} className="text-sm bg-white dark:bg-gray-800 p-2 rounded flex justify-between">
-                                        <span className="font-medium">{player.name}</span>
+                                        <button 
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            fetchPlayerStats(player.id, player.name, leagueInfoData.league.season);
+                                          }}
+                                          className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                        >
+                                          {player.name}
+                                        </button>
                                         <span className="text-gray-500">({player.position})</span>
                                       </div>
                                     ))}
