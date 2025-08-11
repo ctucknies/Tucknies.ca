@@ -33,6 +33,20 @@ import TradeFinder from './TradeFinder';
 import LeagueScouter from './LeagueScouter';
 import { calculatePlacement, calculateWinStreak, calculateAchievements } from './league/utils';
 
+const getTeamName = (teamAbbr) => {
+  const teamNames = {
+    'ARI': 'Arizona Cardinals', 'ATL': 'Atlanta Falcons', 'BAL': 'Baltimore Ravens', 'BUF': 'Buffalo Bills',
+    'CAR': 'Carolina Panthers', 'CHI': 'Chicago Bears', 'CIN': 'Cincinnati Bengals', 'CLE': 'Cleveland Browns',
+    'DAL': 'Dallas Cowboys', 'DEN': 'Denver Broncos', 'DET': 'Detroit Lions', 'GB': 'Green Bay Packers',
+    'HOU': 'Houston Texans', 'IND': 'Indianapolis Colts', 'JAX': 'Jacksonville Jaguars', 'KC': 'Kansas City Chiefs',
+    'LV': 'Las Vegas Raiders', 'LAC': 'Los Angeles Chargers', 'LAR': 'Los Angeles Rams', 'MIA': 'Miami Dolphins',
+    'MIN': 'Minnesota Vikings', 'NE': 'New England Patriots', 'NO': 'New Orleans Saints', 'NYG': 'New York Giants',
+    'NYJ': 'New York Jets', 'PHI': 'Philadelphia Eagles', 'PIT': 'Pittsburgh Steelers', 'SF': 'San Francisco 49ers',
+    'SEA': 'Seattle Seahawks', 'TB': 'Tampa Bay Buccaneers', 'TEN': 'Tennessee Titans', 'WAS': 'Washington Commanders'
+  };
+  return teamNames[teamAbbr] || `${teamAbbr || 'Unknown'} Defense`;
+};
+
 function LeagueManager() {
   const { user } = useAuth();
   const [formData, setFormData] = useState({ username: '', year: new Date().getFullYear().toString() });
@@ -366,7 +380,7 @@ function LeagueManager() {
         
         return {
           id: playerId,
-          name: allPlayers[playerId]?.full_name || 'Unknown Player',
+          name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
           position: allPlayers[playerId]?.position || 'N/A',
           team: allPlayers[playerId]?.team || 'FA',
           fantasyPoints: fantasyPoints
@@ -424,7 +438,7 @@ function LeagueManager() {
             if (rosterId === userRosterId) {
               userAdds.push({
                 id: playerId,
-                name: allPlayers[playerId]?.full_name || 'Unknown Player',
+                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
                 position: allPlayers[playerId]?.position || 'N/A'
               });
             }
@@ -436,7 +450,7 @@ function LeagueManager() {
             if (rosterId === userRosterId) {
               userDrops.push({
                 id: playerId,
-                name: allPlayers[playerId]?.full_name || 'Unknown Player',
+                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
                 position: allPlayers[playerId]?.position || 'N/A'
               });
             }
@@ -453,7 +467,7 @@ function LeagueManager() {
       const processedDraft = userDraftPicks.map(pick => ({
         ...pick,
         player: {
-          name: allPlayers[pick.player_id]?.full_name || 'Unknown Player',
+          name: allPlayers[pick.player_id]?.full_name || (allPlayers[pick.player_id]?.position === 'DEF' ? `${allPlayers[pick.player_id]?.team || 'Unknown'} DEF` : 'Unknown Player'),
           position: allPlayers[pick.player_id]?.position || 'N/A',
           team: allPlayers[pick.player_id]?.team || 'FA'
         }
@@ -611,7 +625,7 @@ function LeagueManager() {
           
           return {
             id: playerId,
-            name: player?.full_name || 'Unknown Player',
+            name: player?.full_name || (player?.position === 'DEF' ? `${player?.team || 'Unknown'} DEF` : 'Unknown Player'),
             position: player?.position || 'N/A',
             team: player?.team || 'FA',
             fantasyPoints: fantasyPoints,
@@ -645,7 +659,7 @@ function LeagueManager() {
               if (!allAdds[rosterId]) allAdds[rosterId] = [];
               allAdds[rosterId].push({
                 id: playerId,
-                name: allPlayers[playerId]?.full_name || 'Unknown Player',
+                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} DEF` : 'Unknown Player'),
                 position: allPlayers[playerId]?.position || 'N/A'
               });
             });
@@ -656,7 +670,7 @@ function LeagueManager() {
               if (!allDrops[rosterId]) allDrops[rosterId] = [];
               allDrops[rosterId].push({
                 id: playerId,
-                name: allPlayers[playerId]?.full_name || 'Unknown Player',
+                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} DEF` : 'Unknown Player'),
                 position: allPlayers[playerId]?.position || 'N/A'
               });
             });
@@ -695,12 +709,12 @@ function LeagueManager() {
             username: primaryUser?.display_name || primaryUser?.username || 'Unknown',
             adds: transaction.adds ? Object.keys(transaction.adds).map(playerId => ({
               id: playerId,
-              name: allPlayers[playerId]?.full_name || 'Unknown Player',
+              name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} DEF` : 'Unknown Player'),
               position: allPlayers[playerId]?.position || 'N/A'
             })) : [],
             drops: transaction.drops ? Object.keys(transaction.drops).map(playerId => ({
               id: playerId,
-              name: allPlayers[playerId]?.full_name || 'Unknown Player',
+              name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} DEF` : 'Unknown Player'),
               position: allPlayers[playerId]?.position || 'N/A'
             })) : []
           };
@@ -1071,7 +1085,7 @@ function LeagueManager() {
         
         return {
           id: playerId,
-          name: player?.full_name || 'Unknown Player',
+          name: player?.full_name || (player?.position === 'DEF' ? `${player?.team || 'Unknown'} DEF` : 'Unknown Player'),
           position: player?.position || 'N/A',
           team: player?.team || 'FA',
           fantasyPoints: fantasyPoints,
@@ -1109,7 +1123,7 @@ function LeagueManager() {
             if (rosterId === userRosterId) {
               userAdds.push({
                 id: playerId,
-                name: allPlayers[playerId]?.full_name || 'Unknown Player',
+                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
                 position: allPlayers[playerId]?.position || 'N/A'
               });
             }
@@ -1121,7 +1135,7 @@ function LeagueManager() {
             if (rosterId === userRosterId) {
               userDrops.push({
                 id: playerId,
-                name: allPlayers[playerId]?.full_name || 'Unknown Player',
+                name: allPlayers[playerId]?.full_name || (allPlayers[playerId]?.position === 'DEF' ? `${allPlayers[playerId]?.team || 'Unknown'} Defense` : 'Unknown Player'),
                 position: allPlayers[playerId]?.position || 'N/A'
               });
             }
@@ -2183,7 +2197,7 @@ function LeagueManager() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4"
           onClick={closeLeagueInfo}
         >
           <motion.div
@@ -2539,14 +2553,30 @@ function LeagueManager() {
                             <option value="waiver">Waivers Only</option>
                             <option value="free_agent">Free Agents Only</option>
                           </select>
+                          <select 
+                            value={tradeFilter} 
+                            onChange={(e) => setTradeFilter(e.target.value)}
+                            className="px-3 py-1 border rounded bg-white dark:bg-gray-700 text-sm"
+                          >
+                            <option value="all">All Users</option>
+                            {[...new Set(leagueInfoData.waivers.map(w => w.username))].map(username => (
+                              <option key={username} value={username}>{username}</option>
+                            ))}
+                          </select>
                         </div>
                       </div>
                       <div className="space-y-3 max-h-96 overflow-y-auto">
                         {leagueInfoData.waivers
-                          .filter(waiver => waiverFilter === 'all' || waiver.type === waiverFilter)
+                          .filter(waiver => 
+                            (waiverFilter === 'all' || waiver.type === waiverFilter) &&
+                            (tradeFilter === 'all' || waiver.username === tradeFilter)
+                          )
                           .length > 0 ? (
                           leagueInfoData.waivers
-                            .filter(waiver => waiverFilter === 'all' || waiver.type === waiverFilter)
+                            .filter(waiver => 
+                              (waiverFilter === 'all' || waiver.type === waiverFilter) &&
+                              (tradeFilter === 'all' || waiver.username === tradeFilter)
+                            )
                             .map((waiver, index) => (
                             <div key={index} className={`p-4 rounded-lg border-l-4 ${
                               waiver.type === 'waiver' 
@@ -2923,7 +2953,7 @@ function LeagueManager() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[150] p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[300] p-4"
           onClick={closePlayerModal}
         >
           <motion.div
@@ -3144,6 +3174,7 @@ function LeagueManager() {
           <LeagueScouter 
             onBack={() => setShowLeagueScouter(false)}
             onShowAuth={() => setShowAuth(true)}
+            onLeagueInfoClick={fetchLeagueInfo}
           />
         </div>
       )}

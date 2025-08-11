@@ -59,7 +59,7 @@ const SeasonSummary = ({ leaguesData, allYearsData, userData, showingAllYears, o
     return (
       <div className="card p-6 mb-6">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold">Season Summary</h3>
+          <h3 className="text-lg font-semibold">Yearly Summary</h3>
         </div>
         
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
