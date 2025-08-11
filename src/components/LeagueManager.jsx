@@ -1330,7 +1330,7 @@ function LeagueManager() {
       </div>
       
       {/* Main Content */}
-      <div className={`max-w-7xl mx-auto p-6 sm:p-8 transition-all duration-300 ${sidebarOpen ? 'ml-64' : 'ml-0'} ${showPlayerStatsPage ? 'hidden' : ''}`}>
+      <div className={`max-w-4xl mx-auto p-6 sm:p-8 transition-all duration-300 ${sidebarOpen ? 'pl-72' : ''} ${showPlayerStatsPage ? 'hidden' : ''}`}>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}

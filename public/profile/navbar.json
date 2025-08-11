@@ -6,26 +6,29 @@
     },
     "sections": [
         {
-            "title": "Home",
+            "title": "FF Manager",
             "href": "/"
         },
         {
+            "title": "Portfolio",
+            "href": "/portfolio"
+        },
+        {
             "title": "Skills",
-            "href": "/skills"
+            "href": "/portfolio/skills"
         },
         {
             "title": "Education",
-            "href": "/education"
+            "href": "/portfolio/education"
         },
         {
             "title": "Experience",
-            "href": "/experience"
+            "href": "/portfolio/experience"
         },
         {
             "title": "Projects",
-            "href": "/projects"
+            "href": "/portfolio/projects"
         },
-
         {
             "title": "Resume",
             "href": "https://drive.google.com/file/d/1nO4ol1GnC1eON5Ns5kG7tQY6W057bIE1/view?usp=sharing",
