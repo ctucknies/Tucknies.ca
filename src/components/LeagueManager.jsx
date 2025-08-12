@@ -231,6 +231,27 @@ function LeagueManager() {
       const weeklyTransactions = await Promise.all(transactionPromises);
       const allTransactions = weeklyTransactions.flat();
       
+      // Get champion if league is complete
+      let championRosterId = null;
+      if (league.status === 'complete') {
+        try {
+          const playoffResponse = await fetch(`https://api.sleeper.app/v1/league/${league.league_id}/winners_bracket`);
+          if (playoffResponse.ok) {
+            const playoffs = await playoffResponse.json();
+            if (playoffs && playoffs.length > 0) {
+              const finalMatch = playoffs.reduce((max, match) => 
+                match.r > max.r ? match : max, playoffs[0]
+              );
+              if (finalMatch && finalMatch.w) {
+                championRosterId = finalMatch.w;
+              }
+            }
+          }
+        } catch (err) {
+          console.log('Could not fetch playoff data');
+        }
+      }
+
       // Process standings
       const standings = rosters.map(roster => {
         const user = users.find(u => u.user_id === roster.owner_id);
@@ -242,7 +263,8 @@ function LeagueManager() {
           losses: roster.settings?.losses || 0,
           ties: roster.settings?.ties || 0,
           points_for: roster.settings?.fpts || 0,
-          points_against: roster.settings?.fpts_against || 0
+          points_against: roster.settings?.fpts_against || 0,
+          isChampion: roster.roster_id === championRosterId
         };
       }).sort((a, b) => {
         if (b.wins !== a.wins) return b.wins - a.wins;

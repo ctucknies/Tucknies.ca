@@ -46,6 +46,16 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
     checkSleeperUsername();
   }, [user]);
 
+  useEffect(() => {
+    if (results && formData.username.trim()) {
+      setResults(null);
+      setLeagueMembers(null);
+      setExpandedUserData({});
+      setExpandedUser(null);
+      handleSubmit({ preventDefault: () => {} });
+    }
+  }, [formData.year]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -83,6 +93,13 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
     const searchYears = year === 'all' ? 
       Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => new Date().getFullYear() - i) : 
       [parseInt(year)];
+    
+    // Clear previous results when year changes
+    if (year !== 'all') {
+      setResults(null);
+      setLeagueMembers(null);
+      setExpandedUserData({});
+    }
     
     const userSummaries = [];
     const memberTracker = new Map();
@@ -443,7 +460,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
 
   if (!user || !hasSleeperUsername) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="max-w-7xl mx-auto p-6 sm:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -453,15 +470,15 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={onBack}
-                className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+                className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl"
               >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <ArrowLeftIcon className="w-6 h-6 text-white" />
               </button>
               <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   League Scouter
                 </h1>
-                <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+                <p className="text-xl text-gray-300 font-medium">
                   {!user ? 'Please log in to access the League Scouter' : 'Please add your Sleeper username to access the League Scouter'}
                 </p>
               </div>
@@ -472,10 +489,13 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-12 text-center shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
+            <p className="text-gray-300 text-lg mb-8">
               {!user 
                 ? 'You need to be logged in to use the League Scouter feature.'
                 : 'You need to add your Sleeper username in your profile to use this feature.'}
@@ -490,7 +510,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                   onBack();
                 }
               }}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg font-semibold text-lg"
             >
               {!user ? 'Go Back to Sign In' : 'Add Sleeper Username'}
             </button>
@@ -501,7 +521,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-7xl mx-auto p-6 sm:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -511,15 +531,15 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={onBack}
-              className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+              className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl"
             >
-              <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <ArrowLeftIcon className="w-6 h-6 text-white" />
             </button>
             <div>
-              <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+              <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 League Scouter
               </h1>
-              <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+              <p className="text-xl text-gray-300 font-medium">
                 Search and analyze fantasy leagues by sleeper username
               </p>
             </div>
@@ -532,12 +552,17 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg">
-            <h2 className="text-xl font-bold mb-4">Search User Season Summary</h2>
+          <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 shadow-2xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                <MagnifyingGlassIcon className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">Search User Season Summary</h2>
+            </div>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <label className="block text-sm font-semibold text-gray-300">
                     Sleeper Username
                   </label>
                   <div className="relative">
@@ -546,7 +571,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                       value={formData.username}
                       onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                       placeholder="Enter sleeper username..."
-                      className="w-full px-4 py-3 bg-white/70 dark:bg-gray-700/70 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 backdrop-blur-sm"
+                      className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-2xl focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-200 backdrop-blur-sm text-white placeholder-gray-400"
                       disabled={isLoading}
                     />
                     <MagnifyingGlassIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -554,20 +579,20 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  <label className="block text-sm font-semibold text-gray-300">
                     Season Year
                   </label>
                   <select
                     value={formData.year}
                     onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                    className="w-full px-4 py-3 bg-white/70 dark:bg-gray-700/70 border border-gray-300/50 dark:border-gray-600/50 rounded-xl focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-200 backdrop-blur-sm"
+                    className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     disabled={isLoading}
                   >
-                    <option value="all">All Years</option>
+                    <option value="all" className="bg-gray-800">All Years</option>
                     {Array.from({ length: new Date().getFullYear() - 2020 + 1 }, (_, i) => {
                       const year = new Date().getFullYear() - i;
                       return (
-                        <option key={year} value={year.toString()}>
+                        <option key={year} value={year.toString()} className="bg-gray-800">
                           {year}
                         </option>
                       );
@@ -580,7 +605,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                 <button
                   type="submit"
                   disabled={isLoading || !formData.username.trim()}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:from-blue-600 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg font-semibold"
                 >
                   {isLoading ? 'Searching...' : 'Search Leagues'}
                 </button>
@@ -595,16 +620,16 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
             animate={{ opacity: 1, scale: 1 }}
             className="mb-8"
           >
-            <div className="bg-red-50/80 dark:bg-red-900/20 backdrop-blur-xl border border-red-200/50 dark:border-red-800/50 rounded-2xl p-6 shadow-lg">
+            <div className="bg-red-500/10 backdrop-blur-xl border border-red-400/20 rounded-3xl p-6 shadow-2xl">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-red-100 dark:bg-red-900/50 rounded-full flex items-center justify-center">
-                  <span className="text-red-600 dark:text-red-400 text-sm">⚠️</span>
+                <div className="w-10 h-10 bg-red-500/20 rounded-2xl flex items-center justify-center">
+                  <span className="text-red-400 text-lg">⚠️</span>
                 </div>
                 <div>
-                  <p className="text-red-800 dark:text-red-200 font-medium">{error}</p>
+                  <p className="text-red-200 font-medium">{error}</p>
                   <button
                     onClick={resetSearch}
-                    className="mt-1 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium transition-colors"
+                    className="mt-1 text-sm text-red-300 hover:text-red-100 font-medium transition-colors"
                   >
                     Try again →
                   </button>
@@ -625,42 +650,42 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
             {results.length > 0 ? (
               <div className="space-y-6">
                 <div className="flex items-center gap-4 mb-8">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                    <MagnifyingGlassIcon className="w-6 h-6 text-white" />
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-3xl flex items-center justify-center shadow-2xl">
+                    <MagnifyingGlassIcon className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent">
+                    <h2 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                       User Analysis
                     </h2>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium">
+                    <p className="text-gray-300 font-medium text-lg">
                       {results[0]?.username} - {results.length} season{results.length !== 1 ? 's' : ''} • {leagueMembers?.length || 0} league members
                     </p>
                   </div>
                 </div>
 
                 {/* Searched User Season Summaries - Highlighted */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 backdrop-blur-xl rounded-2xl shadow-2xl border-2 border-blue-200 dark:border-blue-700 overflow-hidden mb-8">
-                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
-                    <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden mb-8">
+                  <div className="bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-6">
+                    <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                       🎯 {results[0]?.username} - Yearly Summaries
                     </h3>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-800 dark:to-purple-800 border-b border-blue-200 dark:border-blue-600">
-                          <th className="text-left py-4 px-6 font-semibold text-blue-800 dark:text-blue-200">
+                        <tr className="bg-white/10 border-b border-white/20">
+                          <th className="text-left py-4 px-6 font-semibold text-white">
                             <button 
                               onClick={() => handleSort('year')}
-                              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              className="flex items-center gap-1 hover:text-blue-300 transition-colors"
                             >
                               Year {sortConfig.key === 'year' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
                             </button>
                           </th>
-                          <th className="text-center py-4 px-6 font-semibold text-blue-800 dark:text-blue-200">
+                          <th className="text-center py-4 px-6 font-semibold text-white">
                             <button 
                               onClick={() => handleSort('totalLeagues')}
-                              className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mx-auto"
+                              className="flex items-center gap-1 hover:text-blue-300 transition-colors mx-auto"
                             >
                               Leagues {sortConfig.key === 'totalLeagues' && (sortConfig.direction === 'desc' ? '↓' : '↑')}
                             </button>
@@ -766,28 +791,28 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
 
                 {/* League Members */}
                 {leagueMembers && (
-                  <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
-                    <div className="bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-600 px-6 py-4">
-                      <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                  <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 px-8 py-6">
+                      <h3 className="text-2xl font-bold text-white flex items-center gap-3">
                         🏆 Personal Leaderboard ({leagueMembers.length + 1})
                       </h3>
                     </div>
                     <div className="overflow-x-auto">
                       <table className="w-full">
                         <thead>
-                          <tr className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 border-b border-gray-200 dark:border-gray-600">
-                            <th className="text-left py-4 px-6 font-semibold text-gray-700 dark:text-gray-300">
+                          <tr className="bg-white/10 border-b border-white/20">
+                            <th className="text-left py-4 px-6 font-semibold text-white">
                               <button 
                                 onClick={() => handleMemberSort('username')}
-                                className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                className="flex items-center gap-1 hover:text-purple-300 transition-colors"
                               >
                                 Username {memberSortConfig.key === 'username' && (memberSortConfig.direction === 'desc' ? '↓' : '↑')}
                               </button>
                             </th>
-                            <th className="text-center py-4 px-6 font-semibold text-gray-700 dark:text-gray-300">
+                            <th className="text-center py-4 px-6 font-semibold text-white">
                               <button 
                                 onClick={() => handleMemberSort('totalLeagues')}
-                                className="flex items-center gap-1 hover:text-blue-600 dark:hover:text-blue-400 transition-colors mx-auto"
+                                className="flex items-center gap-1 hover:text-purple-300 transition-colors mx-auto"
                               >
                                 Total Leagues {memberSortConfig.key === 'totalLeagues' && (memberSortConfig.direction === 'desc' ? '↓' : '↑')}
                               </button>
@@ -1115,7 +1140,7 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                                                             const leagueObj = {
                                                               league_id: leagueData.league_id,
                                                               name: leagueData.leagueName,
-                                                              season: formData.year === 'all' ? leagueData.year.toString() : formData.year,
+                                                              season: leagueData.year.toString(),
                                                               total_rosters: 12 // Default value
                                                             };
                                                             console.log('Calling onLeagueInfoClick with:', leagueObj);
@@ -1176,10 +1201,10 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
                 )}
               </div>
             ) : (
-              <div className="text-center py-12">
-                <div className="text-4xl mb-4">📊</div>
-                <p className="text-gray-500 dark:text-gray-400 text-lg">No season data found</p>
-                <p className="text-sm text-gray-400 mt-2">
+              <div className="text-center py-16">
+                <div className="text-6xl mb-6">📊</div>
+                <p className="text-gray-300 text-2xl font-semibold mb-2">No season data found</p>
+                <p className="text-gray-400 text-lg">
                   Try searching with a different username or year
                 </p>
               </div>

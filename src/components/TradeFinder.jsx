@@ -849,7 +849,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="max-w-7xl mx-auto p-6 sm:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -859,15 +859,15 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={onBack}
-              className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+              className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl"
             >
-              <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <ArrowLeftIcon className="w-6 h-6 text-white" />
             </button>
             <div>
-              <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+              <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Trade Finder
               </h1>
-              <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+              <p className="text-xl text-gray-300 font-medium">
                 Find optimal trades based on team strengths and deficits
               </p>
             </div>
@@ -878,12 +878,17 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg"
+          className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 mb-8 shadow-2xl"
         >
-          <h2 className="text-xl font-bold mb-4">Select League & Year</h2>
-          <div className="flex gap-4 items-end">
-            <div className="w-32">
-              <label className="block text-sm font-medium mb-2">Year</label>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+              <ArrowsRightLeftIcon className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white">Select League & Year</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+            <div>
+              <label className="block text-sm font-bold text-gray-300 mb-3">Year</label>
               <select
                 value={selectedYear}
                 onChange={(e) => {
@@ -895,58 +900,70 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
                   setTeamStrengths({});
                   setTradeMatches([]);
                 }}
-                className="w-full p-3 border rounded-lg bg-white dark:bg-gray-700"
+                className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
               >
                 {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map(year => (
-                  <option key={year} value={year}>{year}</option>
+                  <option key={year} value={year} className="bg-gray-800">{year}</option>
                 ))}
               </select>
             </div>
-            <div className="flex-1">
-              <label className="block text-sm font-medium mb-2">Your Leagues</label>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-bold text-gray-300 mb-3">Your Leagues</label>
               <select
                 value={selectedLeague}
                 onChange={(e) => setSelectedLeague(e.target.value)}
-                className="w-full p-3 border rounded-lg bg-white dark:bg-gray-700"
+                className="w-full p-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={loadingLeagues}
               >
-                <option value="">Select a league...</option>
+                <option value="" className="bg-gray-800">Select a league...</option>
                 {userLeagues.map(league => (
-                  <option key={league.id} value={league.id}>
+                  <option key={league.id} value={league.id} className="bg-gray-800">
                     {league.name} ({league.total_rosters} teams)
                   </option>
                 ))}
               </select>
             </div>
-            <button
-              onClick={analyzeLeague}
-              disabled={!selectedLeague || loading}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? 'Analyzing...' : 'Find Trades'}
-            </button>
-            <button
-              onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
-              className="px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
-            >
-              Advanced Options
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={analyzeLeague}
+                disabled={!selectedLeague || loading}
+                className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-bold shadow-lg"
+              >
+                {loading ? 'Analyzing...' : 'Find Trades'}
+              </button>
+              <button
+                onClick={() => setShowAdvancedOptions(!showAdvancedOptions)}
+                className="px-4 py-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white rounded-2xl hover:bg-white/20 transition-all duration-300"
+              >
+                ⚙️
+              </button>
+            </div>
           </div>
           {showAdvancedOptions && (
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold">Position Weights</h3>
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mt-8 p-6 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">⚖️</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Position Weights</h3>
+                </div>
                 <button
                   onClick={resetWeights}
-                  className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl text-sm hover:from-green-600 hover:to-emerald-600 transition-all duration-300 font-bold"
                 >
                   Reset to Default
                 </button>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                 {Object.entries(positionWeights).map(([position, weight]) => (
-                  <div key={position}>
-                    <label className="block text-sm font-medium mb-1">{position}</label>
+                  <div key={position} className="bg-white/10 backdrop-blur-sm p-4 rounded-2xl border border-white/20">
+                    <label className="block text-sm font-bold text-gray-300 mb-3">{position}</label>
                     <input
                       type="number"
                       step="0.05"
@@ -954,15 +971,15 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
                       max="2.0"
                       value={weight}
                       onChange={(e) => updateWeight(position, e.target.value)}
-                      className="w-full p-2 border rounded bg-white dark:bg-gray-600 text-sm"
+                      className="w-full p-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     />
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Higher values make positions more valuable in trades. Changes apply to new trade searches.
+              <p className="text-sm text-gray-400 mt-4 bg-blue-500/10 p-3 rounded-xl border border-blue-500/20">
+                💡 Higher values make positions more valuable in trades. Changes apply to new trade searches.
               </p>
-            </div>
+            </motion.div>
           )}
         </motion.div>
 
@@ -972,90 +989,129 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 mb-8 shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <ArrowsRightLeftIcon className="w-5 h-5" />
-              Recommended Trades ({tradeMatches.length})
-            </h2>
-            <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center">
+                <ArrowsRightLeftIcon className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">
+                Recommended Trades ({tradeMatches.length})
+              </h2>
+            </div>
+            <div className="space-y-6">
               {tradeMatches.map((trade, index) => (
-                <div 
-                  key={index} 
+                <motion.div 
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
                   onClick={() => handleTradeClick(trade)}
-                  className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 p-4 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                  className="bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl rounded-2xl border border-white/20 p-6 hover:bg-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-2xl"
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
                       <button 
-                        onClick={() => handleTeamClick(trade.team1)}
-                        className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTeamClick(trade.team1);
+                        }}
+                        className="font-bold text-lg text-white hover:text-blue-400 transition-colors"
                       >
                         {trade.team1}
                       </button>
-                      <ArrowsRightLeftIcon className="w-4 h-4 text-gray-400" />
+                      <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                        <ArrowsRightLeftIcon className="w-4 h-4 text-white" />
+                      </div>
                       <button 
-                        onClick={() => handleTeamClick(trade.team2)}
-                        className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTeamClick(trade.team2);
+                        }}
+                        className="font-bold text-lg text-white hover:text-blue-400 transition-colors"
                       >
                         {trade.team2}
                       </button>
-                      <span className="text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded">
+                      <span className="px-3 py-1 bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-full text-sm font-bold">
                         {trade.type}
                       </span>
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded font-medium ${
-                      trade.fairness === 'Fair' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                      trade.fairness === 'Moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
-                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                    <span className={`px-4 py-2 rounded-2xl text-sm font-bold shadow-lg ${
+                      trade.fairness === 'Fair' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
+                      trade.fairness === 'Good' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' :
+                      'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
                     }`}>
                       {trade.fairness}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="font-medium text-red-600 dark:text-red-400 mb-2">{trade.team1} gives:</div>
-                      <div className="space-y-1">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="bg-red-500/10 backdrop-blur-sm p-4 rounded-2xl border border-red-500/20">
+                      <div className="font-bold text-red-400 mb-4 flex items-center gap-2">
+                        <span className="text-lg">📤</span>
+                        {trade.team1} gives:
+                      </div>
+                      <div className="space-y-3">
                         {trade.team1Gives.map((give, idx) => (
-                          <div key={idx} className="flex justify-between items-center">
-                            <div>
-                              <button
-                                onClick={() => handlePlayerClick(give.player)}
-                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
-                              >
-                                {give.player.full_name}
-                              </button>
-                              <span className="text-gray-500 ml-1">({give.position})</span>
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {give.player.fantasyPoints.toFixed(1)} pts
-                              {give.adjustedValue && (
-                                <div className="text-blue-600 dark:text-blue-400">({give.adjustedValue.toFixed(1)} adj)</div>
-                              )}
+                          <div key={idx} className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/20 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                                give.position === 'QB' ? 'bg-red-500' :
+                                give.position === 'RB' ? 'bg-green-500' :
+                                give.position === 'WR' ? 'bg-blue-500' :
+                                'bg-yellow-500'
+                              }`}>
+                                {give.position[0]}
+                              </div>
+                              <div>
+                                <button
+                                  onClick={() => handlePlayerClick(give.player)}
+                                  className="hover:text-blue-400 transition-colors font-semibold text-white text-sm"
+                                >
+                                  {give.player.full_name}
+                                </button>
+                                <div className="text-xs text-gray-400">
+                                  {give.player.fantasyPoints.toFixed(1)} pts
+                                  {give.adjustedValue && (
+                                    <span className="text-blue-400 ml-1">({give.adjustedValue.toFixed(1)} adj)</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <div className="font-medium text-green-600 dark:text-green-400 mb-2">{trade.team2} gives:</div>
-                      <div className="space-y-1">
+                    <div className="bg-green-500/10 backdrop-blur-sm p-4 rounded-2xl border border-green-500/20">
+                      <div className="font-bold text-green-400 mb-4 flex items-center gap-2">
+                        <span className="text-lg">📥</span>
+                        {trade.team2} gives:
+                      </div>
+                      <div className="space-y-3">
                         {trade.team2Gives.map((give, idx) => (
-                          <div key={idx} className="flex justify-between items-center">
-                            <div>
-                              <button
-                                onClick={() => handlePlayerClick(give.player)}
-                                className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium"
-                              >
-                                {give.player.full_name}
-                              </button>
-                              <span className="text-gray-500 ml-1">({give.position})</span>
-                            </div>
-                            <div className="text-xs text-gray-600 dark:text-gray-400">
-                              {give.player.fantasyPoints.toFixed(1)} pts
-                              {give.adjustedValue && (
-                                <div className="text-blue-600 dark:text-blue-400">({give.adjustedValue.toFixed(1)} adj)</div>
-                              )}
+                          <div key={idx} className="bg-white/10 backdrop-blur-sm p-3 rounded-xl border border-white/20 flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                                give.position === 'QB' ? 'bg-red-500' :
+                                give.position === 'RB' ? 'bg-green-500' :
+                                give.position === 'WR' ? 'bg-blue-500' :
+                                'bg-yellow-500'
+                              }`}>
+                                {give.position[0]}
+                              </div>
+                              <div>
+                                <button
+                                  onClick={() => handlePlayerClick(give.player)}
+                                  className="hover:text-blue-400 transition-colors font-semibold text-white text-sm"
+                                >
+                                  {give.player.full_name}
+                                </button>
+                                <div className="text-xs text-gray-400">
+                                  {give.player.fantasyPoints.toFixed(1)} pts
+                                  {give.adjustedValue && (
+                                    <span className="text-blue-400 ml-1">({give.adjustedValue.toFixed(1)} adj)</span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -1065,17 +1121,20 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
                   
                   {/* Best Player Bonus */}
                   {trade.bestPlayerBonus && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                      <div className="text-xs text-gray-500 mb-1">Best Player Bonus (+{trade.bestPlayerBonus.bonusValue} pts):</div>
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded text-xs">
+                    <div className="mt-6 pt-4 border-t border-white/20">
+                      <div className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 backdrop-blur-sm p-4 rounded-2xl border border-yellow-500/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">🏆</span>
+                          <span className="text-sm font-bold text-yellow-400">Best Player Bonus (+{trade.bestPlayerBonus.bonusValue} pts)</span>
+                        </div>
                         <button
                           onClick={() => handlePlayerClick(trade.bestPlayerBonus.bestPlayer)}
-                          className="font-medium hover:text-blue-600 transition-colors text-yellow-800 dark:text-yellow-200"
+                          className="font-bold hover:text-blue-400 transition-colors text-white"
                         >
                           {trade.bestPlayerBonus.bestPlayer.full_name}
                         </button>
-                        <span className="text-gray-500 ml-1">({trade.bestPlayerBonus.bestPlayer.position})</span>
-                        <div className="text-yellow-700 dark:text-yellow-300 font-medium">
+                        <span className="text-gray-400 ml-2">({trade.bestPlayerBonus.bestPlayer.position})</span>
+                        <div className="text-yellow-300 text-sm mt-1">
                           Highest value player in trade
                         </div>
                       </div>
@@ -1084,23 +1143,26 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
                   
                   {/* Likely Dropped Player */}
                   {(trade.likelyDropped || trade.team2Dropped) && (
-                    <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
-                      <div className="text-xs text-gray-500 mb-1">Likely to be dropped:</div>
-                      <div className="bg-gray-100 dark:bg-gray-700 p-2 rounded text-xs">
+                    <div className="mt-4">
+                      <div className="bg-gray-500/20 backdrop-blur-sm p-4 rounded-2xl border border-gray-500/30">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-lg">⬇️</span>
+                          <span className="text-sm font-bold text-gray-400">Likely to be dropped:</span>
+                        </div>
                         <button
                           onClick={() => handlePlayerClick(trade.likelyDropped || trade.team2Dropped)}
-                          className="font-medium hover:text-blue-600 transition-colors"
+                          className="font-bold hover:text-blue-400 transition-colors text-white"
                         >
                           {(trade.likelyDropped || trade.team2Dropped).full_name}
                         </button>
-                        <span className="text-gray-500 ml-1">({(trade.likelyDropped || trade.team2Dropped).position})</span>
-                        <div className="text-gray-600">
+                        <span className="text-gray-400 ml-2">({(trade.likelyDropped || trade.team2Dropped).position})</span>
+                        <div className="text-gray-300 text-sm mt-1">
                           {((trade.likelyDropped || trade.team2Dropped).fantasyPoints * getPositionScarcity((trade.likelyDropped || trade.team2Dropped).position)).toFixed(1)} pts
                         </div>
                       </div>
                     </div>
                   )}
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>
@@ -1138,38 +1200,58 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 mb-8 shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <ChartBarIcon className="w-5 h-5" />
-              Team Strengths Analysis
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Object.values(teamStrengths).map(team => (
-                <div key={team.rosterId} className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-800 dark:via-gray-700 dark:to-blue-900/20 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-600/50 shadow-lg hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center">
+                <ChartBarIcon className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white">
+                Team Strengths Analysis
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {Object.values(teamStrengths).map((team, index) => (
+                <motion.div 
+                  key={team.rosterId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="bg-gradient-to-br from-white/10 via-white/5 to-transparent backdrop-blur-xl p-6 rounded-3xl border border-white/20 shadow-2xl hover:bg-white/15 hover:border-white/30 transition-all duration-300"
+                >
                   <button
                     onClick={() => handleTeamClick(team.teamName)}
-                    className="text-lg font-bold mb-4 hover:text-blue-600 dark:hover:text-blue-400 transition-colors bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-200 bg-clip-text text-transparent"
+                    className="text-xl font-bold mb-6 text-white hover:text-blue-400 transition-colors"
                   >
                     {team.teamName}
                   </button>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {['QB', 'RB', 'WR', 'TE'].map(pos => (
                       <button
                         key={pos}
                         onClick={() => handlePositionClick(team, pos)}
-                        className="w-full bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-xl p-3 border border-gray-200/30 dark:border-gray-600/30 hover:bg-white/80 dark:hover:bg-gray-700/80 hover:shadow-md transition-all duration-200"
+                        className="w-full bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20 hover:bg-white/20 hover:border-white/30 transition-all duration-300 group"
                       >
                         <div className="flex justify-between items-center">
-                          <span className="font-semibold text-gray-800 dark:text-gray-200">
-                            {pos}s
-                          </span>
                           <div className="flex items-center gap-3">
-                            <span className="text-lg font-bold text-gray-900 dark:text-white">{team[pos].toFixed(1)}</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold shadow-sm ${
+                            <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm font-bold text-white ${
+                              pos === 'QB' ? 'bg-red-500' :
+                              pos === 'RB' ? 'bg-green-500' :
+                              pos === 'WR' ? 'bg-blue-500' :
+                              'bg-yellow-500'
+                            }`}>
+                              {pos}
+                            </div>
+                            <span className="font-bold text-white group-hover:text-blue-400 transition-colors">
+                              {pos}s
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-xl font-black text-white">{team[pos].toFixed(1)}</span>
+                            <span className={`px-4 py-2 rounded-2xl text-sm font-bold shadow-lg ${
                               team[`${pos}_status`] === 'surplus' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
                               team[`${pos}_status`] === 'deficit' ? 'bg-gradient-to-r from-red-500 to-rose-500 text-white' :
-                              'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
+                              'bg-gradient-to-r from-gray-500 to-gray-600 text-white'
                             }`}>
                               {team[`${pos}_status`]}
                             </span>
@@ -1178,7 +1260,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
                       </button>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
           </motion.div>

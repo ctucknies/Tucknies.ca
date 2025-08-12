@@ -125,7 +125,6 @@ function PlayerModal({
                             </span>
                             <button 
                               onClick={() => {
-                                onClose();
                                 onPlayerStatsClick(player.id, player.name, selectedPlayerData.season);
                               }}
                               className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -234,7 +233,6 @@ function PlayerModal({
                               </span>
                               <button 
                                 onClick={() => {
-                                  onClose();
                                   onPlayerStatsClick(pick.player_id, pick.player.name, selectedPlayerData.season);
                                 }}
                                 className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors"

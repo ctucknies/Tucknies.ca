@@ -37,7 +37,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
   const [loadingUserLeagues, setLoadingUserLeagues] = useState(false);
   const [sleeperUsername, setSleeperUsername] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [sortBy, setSortBy] = useState('name');
+  const [sortBy, setSortBy] = useState('fantasyPoints');
   const [showFilters, setShowFilters] = useState(true);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
   const [showComparison, setShowComparison] = useState(false);
@@ -510,7 +510,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
 
   if (!user || !hasSleeperUsername) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="max-w-7xl mx-auto p-6 sm:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -520,15 +520,15 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={onBack}
-                className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+                className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl"
               >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <ArrowLeftIcon className="w-6 h-6 text-white" />
               </button>
               <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Player Statistics
                 </h1>
-                <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+                <p className="text-xl text-gray-300 font-medium">
                   {!user ? 'Please log in to access Player Statistics' : 'Please add your Sleeper username to access Player Statistics'}
                 </p>
               </div>
@@ -568,7 +568,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20 overflow-y-auto">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 overflow-y-auto">
       <div className="max-w-7xl mx-auto p-6 sm:p-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -578,15 +578,15 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={onBack}
-              className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+              className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl"
             >
-              <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+              <ArrowLeftIcon className="w-6 h-6 text-white" />
             </button>
             <div>
-              <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+              <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Player Statistics
               </h1>
-              <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+              <p className="text-xl text-gray-300 font-medium">
                 Search, filter, and analyze NFL player performance
               </p>
             </div>
@@ -597,7 +597,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 mb-8 shadow-lg"
+          className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 mb-8 shadow-2xl"
         >
           <div className="space-y-4">
             <div className="relative">
@@ -607,7 +607,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 placeholder="Search for any NFL player..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                className="w-full pl-12 pr-4 py-4 bg-white/10 border border-white/20 rounded-2xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400/50 transition-all duration-200 backdrop-blur-sm text-lg"
               />
               {loadingSearch && (
                 <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -619,7 +619,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             <div className="flex items-center justify-between">
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white hover:bg-white/20 transition-all duration-300"
               >
                 <FunnelIcon className="w-4 h-4" />
                 Filters {showFilters ? '▲' : '▼'}
@@ -632,7 +632,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                   </span>
                   <button
                     onClick={() => setShowComparison(true)}
-                    className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    className="px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg font-semibold"
                   >
                     Compare Players
                   </button>
@@ -795,7 +795,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg mb-8"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 shadow-2xl mb-8"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
@@ -823,18 +823,18 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                     <div
                       key={player.id}
                       onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
-                      className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+                      className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer ${
                         isSelected 
-                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-2 ring-blue-300 dark:ring-blue-600'
-                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          ? 'bg-white/95 dark:bg-gray-800/95 border-blue-500 ring-2 ring-blue-400/50 shadow-xl'
+                          : 'bg-white/90 dark:bg-gray-800/90 border-gray-200/50 dark:border-gray-600/50 hover:bg-white/95 dark:hover:bg-gray-700/95 hover:border-gray-300 dark:hover:border-gray-500 shadow-lg hover:shadow-xl'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${getPositionColor(player.position)}`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getPositionColor(player.position)}`}>
                             {player.position}
                           </span>
-                          <span className="text-sm text-gray-500">{player.team || 'FA'}</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{player.team || 'FA'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -842,10 +842,10 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                               e.stopPropagation();
                               togglePlayerSelection(player);
                             }}
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
                               isSelected 
                                 ? 'bg-blue-500 border-blue-500 text-white'
-                                : 'border-gray-300 dark:border-gray-600 hover:border-blue-500'
+                                : 'border-gray-400 dark:border-gray-500 hover:border-blue-500 text-gray-600 dark:text-gray-400'
                             }`}
                           >
                             {isSelected && '✓'}
@@ -854,24 +854,28 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                       </div>
                       
                       <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-lg">
                           {player.name}
                         </h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <div>
-                            <span className="text-gray-500">Total:</span> <span className="font-medium text-green-600">{(player.fantasyPoints || 0).toFixed(1)}</span>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
+                            <span className="text-green-700 dark:text-green-300 font-medium">Total:</span>
+                            <div className="font-bold text-green-800 dark:text-green-200 text-lg">{(player.fantasyPoints || 0).toFixed(1)}</div>
                           </div>
-                          <div>
-                            <span className="text-gray-500">PPG:</span> <span className="font-medium text-blue-600">{(player.ppg || 0).toFixed(1)}</span>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                            <span className="text-blue-700 dark:text-blue-300 font-medium">PPG:</span>
+                            <div className="font-bold text-blue-800 dark:text-blue-200 text-lg">{(player.ppg || 0).toFixed(1)}</div>
                           </div>
                           {player.gamesPlayed > 0 && (
-                            <div>
-                              <span className="text-gray-500">GP:</span> {player.gamesPlayed}
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">GP:</span>
+                              <div className="font-bold text-gray-800 dark:text-gray-200">{player.gamesPlayed}</div>
                             </div>
                           )}
                           {player.age && (
-                            <div>
-                              <span className="text-gray-500">Age:</span> {player.age}
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">Age:</span>
+                              <div className="font-bold text-gray-800 dark:text-gray-200">{player.age}</div>
                             </div>
                           )}
                         </div>
@@ -901,7 +905,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-lg"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
@@ -923,18 +927,18 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                     <div
                       key={player.id}
                       onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
-                      className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
+                      className={`p-6 rounded-2xl border transition-all duration-300 cursor-pointer ${
                         isSelected 
-                          ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-2 ring-blue-300 dark:ring-blue-600'
-                          : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          ? 'bg-white/95 dark:bg-gray-800/95 border-blue-500 ring-2 ring-blue-400/50 shadow-xl'
+                          : 'bg-white/90 dark:bg-gray-800/90 border-gray-200/50 dark:border-gray-600/50 hover:bg-white/95 dark:hover:bg-gray-700/95 hover:border-gray-300 dark:hover:border-gray-500 shadow-lg hover:shadow-xl'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                          <span className={`px-2 py-1 rounded text-xs font-bold ${getPositionColor(player.position)}`}>
+                          <span className={`px-3 py-1 rounded-full text-xs font-bold ${getPositionColor(player.position)}`}>
                             {player.position}
                           </span>
-                          <span className="text-sm text-gray-500">{player.team || 'FA'}</span>
+                          <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{player.team || 'FA'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -942,10 +946,10 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                               e.stopPropagation();
                               togglePlayerSelection(player);
                             }}
-                            className={`w-6 h-6 rounded border-2 flex items-center justify-center ${
+                            className={`w-6 h-6 rounded border-2 flex items-center justify-center transition-colors ${
                               isSelected 
                                 ? 'bg-blue-500 border-blue-500 text-white'
-                                : 'border-gray-300 dark:border-gray-600 hover:border-blue-500'
+                                : 'border-gray-400 dark:border-gray-500 hover:border-blue-500 text-gray-600 dark:text-gray-400'
                             }`}
                           >
                             {isSelected && '✓'}
@@ -954,24 +958,28 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                       </div>
                       
                       <div>
-                        <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
+                        <h4 className="font-bold text-gray-900 dark:text-white mb-3 text-lg">
                           {player.name}
                         </h4>
-                        <div className="grid grid-cols-2 gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <div>
-                            <span className="text-gray-500">Total:</span> <span className="font-medium text-green-600">{(player.fantasyPoints || 0).toFixed(1)}</span>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                          <div className="bg-green-50 dark:bg-green-900/20 p-2 rounded-lg">
+                            <span className="text-green-700 dark:text-green-300 font-medium">Total:</span>
+                            <div className="font-bold text-green-800 dark:text-green-200 text-lg">{(player.fantasyPoints || 0).toFixed(1)}</div>
                           </div>
-                          <div>
-                            <span className="text-gray-500">PPG:</span> <span className="font-medium text-blue-600">{(player.ppg || 0).toFixed(1)}</span>
+                          <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-lg">
+                            <span className="text-blue-700 dark:text-blue-300 font-medium">PPG:</span>
+                            <div className="font-bold text-blue-800 dark:text-blue-200 text-lg">{(player.ppg || 0).toFixed(1)}</div>
                           </div>
                           {player.gamesPlayed > 0 && (
-                            <div>
-                              <span className="text-gray-500">GP:</span> {player.gamesPlayed}
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">GP:</span>
+                              <div className="font-bold text-gray-800 dark:text-gray-200">{player.gamesPlayed}</div>
                             </div>
                           )}
                           {player.age && (
-                            <div>
-                              <span className="text-gray-500">Age:</span> {player.age}
+                            <div className="bg-gray-50 dark:bg-gray-700/50 p-2 rounded-lg">
+                              <span className="text-gray-700 dark:text-gray-300 font-medium">Age:</span>
+                              <div className="font-bold text-gray-800 dark:text-gray-200">{player.age}</div>
                             </div>
                           )}
                         </div>

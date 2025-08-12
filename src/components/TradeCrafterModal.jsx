@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XMarkIcon, ArrowsRightLeftIcon } from '@heroicons/react/24/outline';
+import { XMarkIcon, ArrowsRightLeftIcon, SparklesIcon, TrophyIcon } from '@heroicons/react/24/outline';
 
 function TradeCrafterModal({ 
   isOpen, 
@@ -142,253 +142,401 @@ function TradeCrafterModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto"
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 20 }}
+          transition={{ type: "spring", damping: 25, stiffness: 300 }}
+          className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-blue-900/20 rounded-3xl shadow-2xl border border-gray-200/50 dark:border-gray-700/50 max-w-7xl w-full max-h-[95vh] overflow-hidden backdrop-blur-xl"
         >
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold">Trade Crafter</h2>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center">
+                  <ArrowsRightLeftIcon className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+                    Trade Crafter
+                    <SparklesIcon className="w-5 h-5 text-yellow-300" />
+                  </h2>
+                  <p className="text-blue-100 text-sm">Craft and analyze custom trades</p>
+                </div>
+              </div>
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 text-white hover:text-gray-200"
               >
                 <XMarkIcon className="w-6 h-6" />
               </button>
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-6 overflow-y-auto max-h-[calc(95vh-120px)]">
             {/* Trade Areas */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Team 1 Trade Area */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">{initialTrade?.team1} Gives</h3>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1 }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-rose-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">📤</span>
+                  </div>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+                    {initialTrade?.team1} Gives
+                  </h3>
+                </div>
                 <div
-                  className="min-h-24 p-4 border-2 border-dashed border-red-300 dark:border-red-600 rounded-lg bg-red-50/50 dark:bg-red-900/10"
+                  className="min-h-32 p-6 border-2 border-dashed border-red-300 dark:border-red-500 rounded-2xl bg-gradient-to-br from-red-50 via-rose-50 to-red-100/50 dark:from-red-900/20 dark:via-rose-900/20 dark:to-red-800/20 backdrop-blur-sm transition-all duration-300 hover:border-red-400 dark:hover:border-red-400"
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, 'team1')}
                 >
                   {team1Gives.length === 0 ? (
-                    <p className="text-gray-500 text-center text-sm">Drag players here</p>
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-3">🎯</div>
+                      <p className="text-gray-500 font-medium">Drag players here</p>
+                      <p className="text-xs text-gray-400 mt-1">or click + on roster players</p>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {team1Gives.map((give, idx) => (
-                        <div
+                        <motion.div
                           key={idx}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
                           draggable
                           onDragStart={(e) => handleDragStart(e, give.player, give.position, 'team1')}
-                          className="bg-red-100 dark:bg-red-900/30 p-2 rounded cursor-move flex justify-between items-center text-sm"
+                          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl cursor-move flex justify-between items-center shadow-lg border border-red-200 dark:border-red-700 hover:shadow-xl transition-all duration-200"
                         >
-                          <div>
-                            <button
-                              onClick={() => onPlayerClick?.(give.player)}
-                              className="font-medium hover:text-blue-600 transition-colors"
-                            >
-                              {give.player.full_name}
-                            </button>
-                            <span className="text-gray-500 ml-1">({give.position})</span>
-                            <div className="text-xs text-gray-600">
-                              {(give.player.fantasyPoints * getPositionScarcity(give.position)).toFixed(1)} pts
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                              give.position === 'QB' ? 'bg-red-500' :
+                              give.position === 'RB' ? 'bg-green-500' :
+                              give.position === 'WR' ? 'bg-blue-500' :
+                              'bg-yellow-500'
+                            }`}>
+                              {give.position}
+                            </div>
+                            <div>
+                              <button
+                                onClick={() => onPlayerClick?.(give.player)}
+                                className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                              >
+                                {give.player.full_name}
+                              </button>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                {(give.player.fantasyPoints * getPositionScarcity(give.position)).toFixed(1)} pts
+                              </div>
                             </div>
                           </div>
                           <button
                             onClick={() => removePlayer(give.player.id, 'team1')}
-                            className="text-red-600 hover:text-red-800 text-xs"
+                            className="w-8 h-8 bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800 rounded-lg flex items-center justify-center text-red-600 dark:text-red-400 transition-colors"
                           >
                             ×
                           </button>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
               {/* Team 2 Trade Area */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4">{initialTrade?.team2} Gives</h3>
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">📥</span>
+                  </div>
+                  <h3 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                    {initialTrade?.team2} Gives
+                  </h3>
+                </div>
                 <div
-                  className="min-h-24 p-4 border-2 border-dashed border-green-300 dark:border-green-600 rounded-lg bg-green-50/50 dark:bg-green-900/10"
+                  className="min-h-32 p-6 border-2 border-dashed border-green-300 dark:border-green-500 rounded-2xl bg-gradient-to-br from-green-50 via-emerald-50 to-green-100/50 dark:from-green-900/20 dark:via-emerald-900/20 dark:to-green-800/20 backdrop-blur-sm transition-all duration-300 hover:border-green-400 dark:hover:border-green-400"
                   onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, 'team2')}
                 >
                   {team2Gives.length === 0 ? (
-                    <p className="text-gray-500 text-center text-sm">Drag players here</p>
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-3">🎯</div>
+                      <p className="text-gray-500 font-medium">Drag players here</p>
+                      <p className="text-xs text-gray-400 mt-1">or click + on roster players</p>
+                    </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {team2Gives.map((give, idx) => (
-                        <div
+                        <motion.div
                           key={idx}
+                          initial={{ opacity: 0, scale: 0.9 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.9 }}
                           draggable
                           onDragStart={(e) => handleDragStart(e, give.player, give.position, 'team2')}
-                          className="bg-green-100 dark:bg-green-900/30 p-2 rounded cursor-move flex justify-between items-center text-sm"
+                          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-4 rounded-xl cursor-move flex justify-between items-center shadow-lg border border-green-200 dark:border-green-700 hover:shadow-xl transition-all duration-200"
                         >
-                          <div>
-                            <button
-                              onClick={() => onPlayerClick?.(give.player)}
-                              className="font-medium hover:text-blue-600 transition-colors"
-                            >
-                              {give.player.full_name}
-                            </button>
-                            <span className="text-gray-500 ml-1">({give.position})</span>
-                            <div className="text-xs text-gray-600">
-                              {(give.player.fantasyPoints * getPositionScarcity(give.position)).toFixed(1)} pts
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                              give.position === 'QB' ? 'bg-red-500' :
+                              give.position === 'RB' ? 'bg-green-500' :
+                              give.position === 'WR' ? 'bg-blue-500' :
+                              'bg-yellow-500'
+                            }`}>
+                              {give.position}
+                            </div>
+                            <div>
+                              <button
+                                onClick={() => onPlayerClick?.(give.player)}
+                                className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                              >
+                                {give.player.full_name}
+                              </button>
+                              <div className="text-sm text-gray-600 dark:text-gray-400">
+                                {(give.player.fantasyPoints * getPositionScarcity(give.position)).toFixed(1)} pts
+                              </div>
                             </div>
                           </div>
                           <button
                             onClick={() => removePlayer(give.player.id, 'team2')}
-                            className="text-red-600 hover:text-red-800 text-xs"
+                            className="w-8 h-8 bg-red-100 dark:bg-red-900/50 hover:bg-red-200 dark:hover:bg-red-800 rounded-lg flex items-center justify-center text-red-600 dark:text-red-400 transition-colors"
                           >
                             ×
                           </button>
-                        </div>
+                        </motion.div>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             {/* Team Rosters */}
-            <div className="grid grid-cols-2 gap-6 mb-6">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8"
+            >
               {/* Team 1 Roster */}
-              <div>
-                <h4 className="font-semibold mb-3">{initialTrade?.team1} Roster</h4>
-                <div className="max-h-64 overflow-y-auto space-y-1">
+              <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">👥</span>
+                  </div>
+                  <h4 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    {initialTrade?.team1} Roster
+                  </h4>
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                   {['QB', 'RB', 'WR', 'TE'].map(pos => (
-                    <div key={pos}>
-                      <div className="text-xs font-medium text-gray-600 mb-1">{pos}s</div>
-                      {(team1Data?.players[pos.toLowerCase() + 's'] || []).map(player => {
-                        const inTrade = team1Gives.some(g => g.player.id === player.id) || team2Gives.some(g => g.player.id === player.id);
-                        return (
-                          <div
-                            key={player.id}
-                            draggable={!inTrade}
-                            onDragStart={(e) => !inTrade && handleDragStart(e, player, pos, 'team1', true)}
-                            className={`p-2 rounded text-xs flex justify-between items-center ${
-                              inTrade 
-                                ? 'bg-gray-200 dark:bg-gray-700 opacity-50 cursor-not-allowed'
-                                : 'bg-gray-100 dark:bg-gray-700 cursor-move hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            <div>
-                              <button
-                                onClick={() => onPlayerClick?.(player)}
-                                className="font-medium hover:text-blue-600 transition-colors"
-                              >
-                                {player.full_name}
-                              </button>
-                              <div className="text-gray-600">{player.fantasyPoints.toFixed(1)} pts</div>
+                    <div key={pos} className="mb-4">
+                      <div className={`text-sm font-bold mb-2 px-2 py-1 rounded-lg inline-block ${
+                        pos === 'QB' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                        pos === 'RB' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                        pos === 'WR' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                      }`}>
+                        {pos}s
+                      </div>
+                      <div className="space-y-2">
+                        {(team1Data?.players[pos.toLowerCase() + 's'] || []).map(player => {
+                          const inTrade = team1Gives.some(g => g.player.id === player.id) || team2Gives.some(g => g.player.id === player.id);
+                          return (
+                            <div
+                              key={player.id}
+                              draggable={!inTrade}
+                              onDragStart={(e) => !inTrade && handleDragStart(e, player, pos, 'team1', true)}
+                              className={`p-3 rounded-xl flex justify-between items-center transition-all duration-200 ${
+                                inTrade 
+                                  ? 'bg-gray-200/50 dark:bg-gray-700/50 opacity-50 cursor-not-allowed'
+                                  : 'bg-white/80 dark:bg-gray-700/80 cursor-move hover:bg-white dark:hover:bg-gray-600 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                                  pos === 'QB' ? 'bg-red-500' :
+                                  pos === 'RB' ? 'bg-green-500' :
+                                  pos === 'WR' ? 'bg-blue-500' :
+                                  'bg-yellow-500'
+                                }`}>
+                                  {pos[0]}
+                                </div>
+                                <div>
+                                  <button
+                                    onClick={() => onPlayerClick?.(player)}
+                                    className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left text-sm"
+                                  >
+                                    {player.full_name}
+                                  </button>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {player.fantasyPoints.toFixed(1)} pts
+                                  </div>
+                                </div>
+                              </div>
+                              {!inTrade && (
+                                <button
+                                  onClick={() => addPlayerToTrade(player, pos, 'team1')}
+                                  className="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 transition-colors font-bold"
+                                >
+                                  +
+                                </button>
+                              )}
                             </div>
-                            {!inTrade && (
-                              <button
-                                onClick={() => addPlayerToTrade(player, pos, 'team1')}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                +
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Team 2 Roster */}
-              <div>
-                <h4 className="font-semibold mb-3">{initialTrade?.team2} Roster</h4>
-                <div className="max-h-64 overflow-y-auto space-y-1">
+              <div className="bg-white/60 dark:bg-gray-800/60 backdrop-blur-sm rounded-2xl p-6 border border-gray-200/50 dark:border-gray-700/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">👥</span>
+                  </div>
+                  <h4 className="text-lg font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                    {initialTrade?.team2} Roster
+                  </h4>
+                </div>
+                <div className="max-h-80 overflow-y-auto space-y-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
                   {['QB', 'RB', 'WR', 'TE'].map(pos => (
-                    <div key={pos}>
-                      <div className="text-xs font-medium text-gray-600 mb-1">{pos}s</div>
-                      {(team2Data?.players[pos.toLowerCase() + 's'] || []).map(player => {
-                        const inTrade = team1Gives.some(g => g.player.id === player.id) || team2Gives.some(g => g.player.id === player.id);
-                        return (
-                          <div
-                            key={player.id}
-                            draggable={!inTrade}
-                            onDragStart={(e) => !inTrade && handleDragStart(e, player, pos, 'team2', true)}
-                            className={`p-2 rounded text-xs flex justify-between items-center ${
-                              inTrade 
-                                ? 'bg-gray-200 dark:bg-gray-700 opacity-50 cursor-not-allowed'
-                                : 'bg-gray-100 dark:bg-gray-700 cursor-move hover:bg-gray-200 dark:hover:bg-gray-600'
-                            }`}
-                          >
-                            <div>
-                              <button
-                                onClick={() => onPlayerClick?.(player)}
-                                className="font-medium hover:text-blue-600 transition-colors"
-                              >
-                                {player.full_name}
-                              </button>
-                              <div className="text-gray-600">{player.fantasyPoints.toFixed(1)} pts</div>
+                    <div key={pos} className="mb-4">
+                      <div className={`text-sm font-bold mb-2 px-2 py-1 rounded-lg inline-block ${
+                        pos === 'QB' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300' :
+                        pos === 'RB' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                        pos === 'WR' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                        'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
+                      }`}>
+                        {pos}s
+                      </div>
+                      <div className="space-y-2">
+                        {(team2Data?.players[pos.toLowerCase() + 's'] || []).map(player => {
+                          const inTrade = team1Gives.some(g => g.player.id === player.id) || team2Gives.some(g => g.player.id === player.id);
+                          return (
+                            <div
+                              key={player.id}
+                              draggable={!inTrade}
+                              onDragStart={(e) => !inTrade && handleDragStart(e, player, pos, 'team2', true)}
+                              className={`p-3 rounded-xl flex justify-between items-center transition-all duration-200 ${
+                                inTrade 
+                                  ? 'bg-gray-200/50 dark:bg-gray-700/50 opacity-50 cursor-not-allowed'
+                                  : 'bg-white/80 dark:bg-gray-700/80 cursor-move hover:bg-white dark:hover:bg-gray-600 hover:shadow-md border border-gray-200/50 dark:border-gray-600/50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold text-white ${
+                                  pos === 'QB' ? 'bg-red-500' :
+                                  pos === 'RB' ? 'bg-green-500' :
+                                  pos === 'WR' ? 'bg-blue-500' :
+                                  'bg-yellow-500'
+                                }`}>
+                                  {pos[0]}
+                                </div>
+                                <div>
+                                  <button
+                                    onClick={() => onPlayerClick?.(player)}
+                                    className="font-semibold hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left text-sm"
+                                  >
+                                    {player.full_name}
+                                  </button>
+                                  <div className="text-xs text-gray-600 dark:text-gray-400">
+                                    {player.fantasyPoints.toFixed(1)} pts
+                                  </div>
+                                </div>
+                              </div>
+                              {!inTrade && (
+                                <button
+                                  onClick={() => addPlayerToTrade(player, pos, 'team2')}
+                                  className="w-8 h-8 bg-blue-100 dark:bg-blue-900/50 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400 transition-colors font-bold"
+                                >
+                                  +
+                                </button>
+                              )}
                             </div>
-                            {!inTrade && (
-                              <button
-                                onClick={() => addPlayerToTrade(player, pos, 'team2')}
-                                className="text-blue-600 hover:text-blue-800"
-                              >
-                                +
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Trade Analysis */}
             {analysis && (
-              <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <h4 className="font-semibold mb-3 flex items-center gap-2">
-                  <ArrowsRightLeftIcon className="w-5 h-5" />
-                  Live Trade Analysis
-                </h4>
-                <div className="grid grid-cols-3 gap-4 text-sm mb-4">
-                  <div className="text-center">
-                    <div className="font-medium text-red-600">{initialTrade?.team1}</div>
-                    <div className="text-2xl font-bold">{analysis.team1Value.toFixed(1)}</div>
-                    <div className="text-xs text-gray-500">Total Value</div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="bg-gradient-to-br from-white via-gray-50 to-blue-50/30 dark:from-gray-800 dark:via-gray-700 dark:to-blue-900/20 p-6 rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg"
+              >
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                    <TrophyIcon className="w-5 h-5 text-white" />
                   </div>
-                  <div className="text-center">
-                    <div className="font-medium">Fairness</div>
-                    <span className={`inline-block px-3 py-1 rounded-full text-sm font-bold ${
-                      analysis.fairness === 'Fair' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
-                      analysis.fairness === 'Good' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
-                      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                  <h4 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Live Trade Analysis
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                  <div className="text-center bg-gradient-to-br from-red-50 to-rose-100 dark:from-red-900/20 dark:to-rose-900/20 p-4 rounded-2xl border border-red-200 dark:border-red-700">
+                    <div className="font-bold text-red-600 dark:text-red-400 mb-2">{initialTrade?.team1}</div>
+                    <div className="text-3xl font-black text-red-700 dark:text-red-300">{analysis.team1Value.toFixed(1)}</div>
+                    <div className="text-sm text-red-600/70 dark:text-red-400/70 font-medium">Total Value</div>
+                  </div>
+                  <div className="text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 p-4 rounded-2xl border border-gray-200 dark:border-gray-600">
+                    <div className="font-bold text-gray-700 dark:text-gray-300 mb-2">Fairness</div>
+                    <span className={`inline-block px-4 py-2 rounded-2xl text-sm font-bold shadow-lg ${
+                      analysis.fairness === 'Fair' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' :
+                      analysis.fairness === 'Good' ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' :
+                      'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
                     }`}>
                       {analysis.fairness}
                     </span>
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-2 font-medium">
                       Diff: {analysis.valueDiff.toFixed(1)} pts
                     </div>
                   </div>
-                  <div className="text-center">
-                    <div className="font-medium text-green-600">{initialTrade?.team2}</div>
-                    <div className="text-2xl font-bold">{analysis.team2Value.toFixed(1)}</div>
-                    <div className="text-xs text-gray-500">Total Value</div>
+                  <div className="text-center bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-2xl border border-green-200 dark:border-green-700">
+                    <div className="font-bold text-green-600 dark:text-green-400 mb-2">{initialTrade?.team2}</div>
+                    <div className="text-3xl font-black text-green-700 dark:text-green-300">{analysis.team2Value.toFixed(1)}</div>
+                    <div className="text-sm text-green-600/70 dark:text-green-400/70 font-medium">Total Value</div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-gray-500 bg-blue-50 dark:bg-blue-900/20 p-3 rounded">
-                    <strong>Position Weights:</strong> QB: {positionWeights?.QB || 0.625}x, RB: {positionWeights?.RB || 1.0}x, WR: {positionWeights?.WR || 0.95}x, TE: {positionWeights?.TE || 1.05}x
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-700">
+                    <div className="flex items-center gap-2 mb-2">
+                      <SparklesIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="font-bold text-blue-800 dark:text-blue-200">Position Weights</span>
+                    </div>
+                    <div className="text-sm text-blue-700 dark:text-blue-300">
+                      QB: {positionWeights?.QB || 0.625}x • RB: {positionWeights?.RB || 1.0}x • WR: {positionWeights?.WR || 0.95}x • TE: {positionWeights?.TE || 1.05}x
+                    </div>
                   </div>
                   {analysis.bestPlayerBonus && (
-                    <div className="text-xs text-gray-500 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded">
-                      <strong>Best Player Bonus:</strong> {analysis.bestPlayerBonus.bestPlayer.full_name} earns +{analysis.bestPlayerBonus.bonusValue} pts for being the highest value player in the trade
+                    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 p-4 rounded-xl border border-yellow-200 dark:border-yellow-700">
+                      <div className="flex items-center gap-2 mb-2">
+                        <TrophyIcon className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />
+                        <span className="font-bold text-yellow-800 dark:text-yellow-200">Best Player Bonus</span>
+                      </div>
+                      <div className="text-sm text-yellow-700 dark:text-yellow-300">
+                        <span className="font-semibold">{analysis.bestPlayerBonus.bestPlayer.full_name}</span> earns +{analysis.bestPlayerBonus.bonusValue} pts for being the highest value player in the trade
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </motion.div>

@@ -124,12 +124,19 @@ function LeagueInfoModal({
                           {index === 2 && '🥉'}
                           {index + 1}
                         </div>
-                        <button 
-                          onClick={() => onPlayerModalClick(team.username, leagueInfoData.league.league_id, leagueInfoData.league.season)}
-                          className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
-                        >
-                          {team.username}
-                        </button>
+                        <div className="flex flex-col items-start">
+                          {index === 0 && (
+                            <div className="text-yellow-500 text-lg mb-1" title="League Champion">
+                              👑
+                            </div>
+                          )}
+                          <button 
+                            onClick={() => onPlayerModalClick(team.username, leagueInfoData.league.league_id, leagueInfoData.league.season)}
+                            className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                          >
+                            {team.username}
+                          </button>
+                        </div>
                         <div className="font-semibold">{team.wins}-{team.losses}{team.ties > 0 && `-${team.ties}`}</div>
                         <div className="text-blue-600 dark:text-blue-400 font-medium">{team.points_for.toFixed(1)}</div>
                         <div className="text-red-600 dark:text-red-400">{team.points_against.toFixed(1)}</div>
