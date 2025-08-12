@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { secureApiCall, validatePlayerId } from '../../utils/security';
+import { apiCache, debounce } from '../../utils/performance';
 
-const PlayerStatsModal = ({ 
+const PlayerStatsModal = React.memo(({ 
   showPlayerStats, 
   playerStatsData, 
   loadingPlayerStats, 
@@ -641,6 +642,6 @@ const PlayerStatsModal = ({
       </motion.div>
     </motion.div>
   );
-};
+});
 
 export default PlayerStatsModal;

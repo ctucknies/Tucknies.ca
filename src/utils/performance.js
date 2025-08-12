@@ -1,189 +1,185 @@
-// Performance monitoring utilities
+// Performance optimization utilities
 
-class PerformanceMonitor {
-  constructor() {
-    this.metrics = new Map();
-    this.observers = [];
-  }
-
-  // Start timing an operation
-  startTimer(name) {
-    this.metrics.set(name, { start: performance.now() });
-  }
-
-  // End timing and record duration
-  endTimer(name) {
-    const metric = this.metrics.get(name);
-    if (metric) {
-      metric.duration = performance.now() - metric.start;
-      metric.end = performance.now();
-      
-      // Log slow operations in development
-      if (process.env.NODE_ENV === 'development' && metric.duration > 1000) {
-        console.warn(`Slow operation detected: ${name} took ${metric.duration.toFixed(2)}ms`);
+// Enhanced debounce with immediate execution option
+export const debounce = (func, delay, immediate = false) => {
+  let timeoutId;
+  let lastCallTime = 0;
+  
+  return function executedFunction(...args) {
+    const callNow = immediate && !timeoutId;
+    const now = Date.now();
+    
+    clearTimeout(timeoutId);
+    
+    timeoutId = setTimeout(() => {
+      timeoutId = null;
+      if (!immediate) {
+        lastCallTime = Date.now();
+        func.apply(this, args);
       }
+    }, delay);
+    
+    if (callNow) {
+      lastCallTime = now;
+      func.apply(this, args);
     }
-  }
+  };
+};
 
-  // Get metric data
-  getMetric(name) {
-    return this.metrics.get(name);
+// Memory-efficient LRU cache
+export class LRUCache {
+  constructor(maxSize = 100) {
+    this.maxSize = maxSize;
+    this.cache = new Map();
   }
-
-  // Get all metrics
-  getAllMetrics() {
-    return Object.fromEntries(this.metrics);
+  
+  get(key) {
+    if (this.cache.has(key)) {
+      const value = this.cache.get(key);
+      // Move to end (most recently used)
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+    return null;
   }
-
-  // Clear metrics
-  clearMetrics() {
-    this.metrics.clear();
+  
+  set(key, value) {
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      // Remove least recently used (first item)
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(key, value);
   }
-
-  // Monitor API calls
-  monitorApiCall(url, startTime, endTime, success = true) {
-    const duration = endTime - startTime;
-    const key = `api_${new URL(url).pathname}`;
-    
-    if (!this.metrics.has(key)) {
-      this.metrics.set(key, {
-        calls: 0,
-        totalDuration: 0,
-        failures: 0,
-        avgDuration: 0
-      });
-    }
-    
-    const metric = this.metrics.get(key);
-    metric.calls++;
-    metric.totalDuration += duration;
-    metric.avgDuration = metric.totalDuration / metric.calls;
-    
-    if (!success) {
-      metric.failures++;
-    }
-    
-    // Alert on consistently slow APIs
-    if (metric.avgDuration > 5000 && metric.calls > 5) {
-      console.warn(`Slow API detected: ${url} avg: ${metric.avgDuration.toFixed(2)}ms`);
-    }
+  
+  clear() {
+    this.cache.clear();
   }
-
-  // Monitor component render times
-  monitorRender(componentName, renderTime) {
-    const key = `render_${componentName}`;
-    
-    if (!this.metrics.has(key)) {
-      this.metrics.set(key, {
-        renders: 0,
-        totalTime: 0,
-        avgTime: 0,
-        maxTime: 0
-      });
-    }
-    
-    const metric = this.metrics.get(key);
-    metric.renders++;
-    metric.totalTime += renderTime;
-    metric.avgTime = metric.totalTime / metric.renders;
-    metric.maxTime = Math.max(metric.maxTime, renderTime);
-    
-    // Alert on slow renders
-    if (renderTime > 16) { // 60fps threshold
-      console.warn(`Slow render: ${componentName} took ${renderTime.toFixed(2)}ms`);
-    }
-  }
-
-  // Get performance summary
-  getSummary() {
-    const summary = {
-      apiCalls: {},
-      renders: {},
-      operations: {}
-    };
-    
-    for (const [key, value] of this.metrics.entries()) {
-      if (key.startsWith('api_')) {
-        summary.apiCalls[key.replace('api_', '')] = value;
-      } else if (key.startsWith('render_')) {
-        summary.renders[key.replace('render_', '')] = value;
-      } else {
-        summary.operations[key] = value;
-      }
-    }
-    
-    return summary;
+  
+  size() {
+    return this.cache.size;
   }
 }
 
-// Global performance monitor instance
-export const performanceMonitor = new PerformanceMonitor();
+// Global cache instances
+export const apiCache = new LRUCache(200);
+export const playerCache = new LRUCache(500);
 
-// React hook for monitoring component performance
-export const usePerformanceMonitor = (componentName) => {
-  const startTime = performance.now();
+// Batch API requests to reduce network calls
+export class BatchRequestManager {
+  constructor(batchSize = 5, delay = 100) {
+    this.batchSize = batchSize;
+    this.delay = delay;
+    this.queue = [];
+    this.processing = false;
+  }
   
-  React.useEffect(() => {
-    const endTime = performance.now();
-    performanceMonitor.monitorRender(componentName, endTime - startTime);
-  });
-};
-
-// Higher-order component for performance monitoring
-export const withPerformanceMonitoring = (WrappedComponent, componentName) => {
-  return React.memo((props) => {
-    const startTime = performance.now();
-    
-    React.useEffect(() => {
-      const endTime = performance.now();
-      performanceMonitor.monitorRender(componentName, endTime - startTime);
+  add(request) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ request, resolve, reject });
+      this.processBatch();
     });
+  }
+  
+  async processBatch() {
+    if (this.processing || this.queue.length === 0) return;
     
-    return React.createElement(WrappedComponent, props);
-  });
-};
-
-// Utility to measure async operations
-export const measureAsync = async (name, asyncFn) => {
-  const startTime = performance.now();
-  try {
-    const result = await asyncFn();
-    const endTime = performance.now();
-    performanceMonitor.monitorApiCall(name, startTime, endTime, true);
-    return result;
-  } catch (error) {
-    const endTime = performance.now();
-    performanceMonitor.monitorApiCall(name, startTime, endTime, false);
-    throw error;
-  }
-};
-
-// Memory usage monitoring
-export const monitorMemoryUsage = () => {
-  if ('memory' in performance) {
-    const memory = performance.memory;
-    return {
-      used: Math.round(memory.usedJSHeapSize / 1048576), // MB
-      total: Math.round(memory.totalJSHeapSize / 1048576), // MB
-      limit: Math.round(memory.jsHeapSizeLimit / 1048576) // MB
-    };
-  }
-  return null;
-};
-
-// Bundle size analyzer (development only)
-export const analyzeBundleSize = () => {
-  if (process.env.NODE_ENV === 'development') {
-    const scripts = Array.from(document.querySelectorAll('script[src]'));
-    const totalSize = scripts.reduce((size, script) => {
-      // This is a rough estimate - in production you'd use webpack-bundle-analyzer
-      return size + (script.src.length * 100); // Rough estimate
-    }, 0);
+    this.processing = true;
     
-    console.log(`Estimated bundle size: ${(totalSize / 1024).toFixed(2)} KB`);
-    return totalSize;
+    while (this.queue.length > 0) {
+      const batch = this.queue.splice(0, this.batchSize);
+      
+      try {
+        const results = await Promise.allSettled(
+          batch.map(({ request }) => request())
+        );
+        
+        results.forEach((result, index) => {
+          if (result.status === 'fulfilled') {
+            batch[index].resolve(result.value);
+          } else {
+            batch[index].reject(result.reason);
+          }
+        });
+      } catch (error) {
+        batch.forEach(({ reject }) => reject(error));
+      }
+      
+      // Small delay between batches
+      if (this.queue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, this.delay));
+      }
+    }
+    
+    this.processing = false;
   }
-  return 0;
+}
+
+// Throttle function for high-frequency events
+export const throttle = (func, limit) => {
+  let inThrottle;
+  return function(...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
 };
 
-export default performanceMonitor;
+// Memory usage monitor
+export const memoryMonitor = {
+  check() {
+    if (performance.memory) {
+      const { usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit } = performance.memory;
+      const usage = (usedJSHeapSize / jsHeapSizeLimit) * 100;
+      
+      if (usage > 80) {
+        console.warn('High memory usage detected:', usage.toFixed(2) + '%');
+        this.cleanup();
+      }
+      
+      return { usage, usedJSHeapSize, totalJSHeapSize };
+    }
+    return null;
+  },
+  
+  cleanup() {
+    // Clear caches when memory is high
+    apiCache.clear();
+    playerCache.clear();
+    
+    // Force garbage collection if available
+    if (window.gc) {
+      window.gc();
+    }
+  }
+};
+
+// Performance timing utility
+export const performanceTimer = {
+  timers: new Map(),
+  
+  start(label) {
+    this.timers.set(label, performance.now());
+  },
+  
+  end(label) {
+    const startTime = this.timers.get(label);
+    if (startTime) {
+      const duration = performance.now() - startTime;
+      this.timers.delete(label);
+      console.log(`${label}: ${duration.toFixed(2)}ms`);
+      return duration;
+    }
+    return null;
+  }
+};
+
+// Cleanup interval for memory management
+setInterval(() => {
+  memoryMonitor.check();
+}, 30000); // Check every 30 seconds

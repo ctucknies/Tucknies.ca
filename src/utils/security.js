@@ -42,19 +42,36 @@ export const sanitizeInput = (input) => {
     return validationCache.get(cacheKey);
   }
   
-  const sanitized = input.trim().replace(/[<>\"'&]/g, '');
+  // Enhanced XSS prevention
+  const sanitized = input
+    .trim()
+    .replace(/[<>"'&]/g, (match) => {
+      const entities = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;',
+        '&': '&amp;'
+      };
+      return entities[match];
+    })
+    .replace(/javascript:/gi, '')
+    .replace(/on\w+=/gi, '')
+    .replace(/data:/gi, '')
+    .replace(/vbscript:/gi, '');
+    
   validationCache.set(cacheKey, sanitized);
   return sanitized;
 };
 
 export const validateLeagueId = (leagueId) => {
   if (!leagueId || typeof leagueId !== 'string') return false;
-  return /^[a-zA-Z0-9]+$/.test(leagueId) && leagueId.length <= 20;
+  return /^[a-zA-Z0-9]+$/.test(leagueId) && leagueId.length >= 10 && leagueId.length <= 20;
 };
 
 export const validatePlayerId = (playerId) => {
   if (!playerId || typeof playerId !== 'string') return false;
-  return /^[a-zA-Z0-9_]+$/.test(playerId) && playerId.length <= 20;
+  return /^[a-zA-Z0-9_]+$/.test(playerId) && playerId.length >= 1 && playerId.length <= 20;
 };
 
 export const rateLimiter = (() => {
@@ -99,13 +116,26 @@ export const rateLimiter = (() => {
 })();
 
 export const secureApiCall = async (url, options = {}) => {
-  const rateLimitKey = new URL(url).hostname;
+  // Validate URL to prevent SSRF attacks
+  let parsedUrl;
+  try {
+    parsedUrl = new URL(url);
+  } catch {
+    throw new Error('Invalid URL');
+  }
+  
+  // Only allow Sleeper API calls
+  if (!parsedUrl.hostname.includes('sleeper.app')) {
+    throw new Error('Unauthorized domain');
+  }
+  
+  const rateLimitKey = parsedUrl.hostname;
   if (!rateLimiter(rateLimitKey)) {
     throw new Error('Rate limit exceeded');
   }
   
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout for better reliability
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
   
   try {
     const response = await fetch(url, {
@@ -114,8 +144,12 @@ export const secureApiCall = async (url, options = {}) => {
       headers: {
         'Content-Type': 'application/json',
         'User-Agent': 'FantasyHub/1.0',
+        'Accept': 'application/json',
         ...options.headers
-      }
+      },
+      // Security headers
+      mode: 'cors',
+      credentials: 'omit'
     });
     
     clearTimeout(timeoutId);
@@ -132,6 +166,14 @@ export const secureApiCall = async (url, options = {}) => {
     }
     throw error;
   }
+};
+
+// Content Security Policy helper
+export const setCSPHeaders = () => {
+  const meta = document.createElement('meta');
+  meta.httpEquiv = 'Content-Security-Policy';
+  meta.content = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://api.sleeper.app;";
+  document.head.appendChild(meta);
 };
 
 // Clean up validation cache periodically

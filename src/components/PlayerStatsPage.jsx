@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { 
   MagnifyingGlassIcon,
@@ -9,7 +9,7 @@ import {
   StarIcon,
 
 } from '@heroicons/react/24/outline';
-import { secureApiCall } from '../utils/security';
+import { secureApiCall, validatePlayerId } from '../utils/security';
 import PlayerStatsModal from './league/PlayerStatsModal';
 import PlayerComparisonModal from './league/PlayerComparisonModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -355,6 +355,11 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
   }, [selectedYear]);
 
   const fetchPlayerStats = async (playerId, playerName, year, targetWeek = null) => {
+    if (!validatePlayerId(playerId)) {
+      console.error('Invalid player ID');
+      return;
+    }
+    
     setLoadingPlayerStats(true);
     setShowPlayerStats(true);
     setPlayerStatsTab('current');
@@ -365,14 +370,24 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
       const startYear = 2020;
       const yearlyStats = {};
       
+      // Use Promise.allSettled for better performance
+      const statsPromises = [];
       for (let statsYear = startYear; statsYear <= currentYear; statsYear++) {
-        try {
-          const statsResponse = await fetch(`https://api.sleeper.app/v1/stats/nfl/regular/${statsYear}`);
-          if (statsResponse.ok) {
-            const allStats = await statsResponse.json();
-            const playerStats = allStats[playerId] || {};
+        statsPromises.push(
+          secureApiCall(`https://api.sleeper.app/v1/stats/nfl/regular/${statsYear}`)
+            .then(response => response.json())
+            .then(allStats => ({ year: statsYear, stats: allStats[playerId] || {}, allStats }))
+            .catch(() => ({ year: statsYear, stats: {}, allStats: {} }))
+        );
+      }
+      
+      const results = await Promise.allSettled(statsPromises);
+      
+      results.forEach(result => {
+        if (result.status === 'fulfilled' && Object.keys(result.value.stats).length > 0) {
+          const { year: statsYear, stats: playerStats, allStats } = result.value;
             
-            if (Object.keys(playerStats).length > 0) {
+
               
               const allPlayersWithStats = Object.entries(allStats)
                 .map(([id, stats]) => ({
@@ -412,12 +427,8 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 positionRank: positionRank > 0 ? positionRank : 'N/A',
                 team: playerInfo?.team || 'N/A'
               };
-            }
-          }
-        } catch (err) {
-          console.log(`No stats found for ${statsYear}`);
         }
-      }
+      });
       
       const currentYearData = yearlyStats[year] || {
         stats: {},
@@ -485,7 +496,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
     });
   };
 
-  const getPositionColor = (position) => {
+  const getPositionColor = useCallback((position) => {
     switch (position) {
       case 'QB': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case 'RB': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -495,7 +506,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
       case 'DEF': return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
     }
-  };
+  }, []);
 
   if (!user || !hasSleeperUsername) {
     return (
