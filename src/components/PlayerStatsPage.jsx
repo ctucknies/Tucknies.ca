@@ -373,6 +373,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             const playerStats = allStats[playerId] || {};
             
             if (Object.keys(playerStats).length > 0) {
+              
               const allPlayersWithStats = Object.entries(allStats)
                 .map(([id, stats]) => ({
                   id,
@@ -408,7 +409,8 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 stats: playerStats,
                 derivedStats,
                 overallRank: overallRank > 0 ? overallRank : 'N/A',
-                positionRank: positionRank > 0 ? positionRank : 'N/A'
+                positionRank: positionRank > 0 ? positionRank : 'N/A',
+                team: playerInfo?.team || 'N/A'
               };
             }
           }
@@ -421,7 +423,8 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
         stats: {},
         derivedStats: { total_td: 0, fantasy_ppg: '0' },
         overallRank: 'N/A',
-        positionRank: 'N/A'
+        positionRank: 'N/A',
+        team: playerInfo?.team || 'N/A'
       };
       
       setPlayerStatsData({
@@ -464,7 +467,8 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
         derivedStats: yearData.derivedStats,
         year,
         overallRank: yearData.overallRank,
-        positionRank: yearData.positionRank
+        positionRank: yearData.positionRank,
+        team: yearData.team
       });
     }
   };
@@ -807,6 +811,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                   return (
                     <div
                       key={player.id}
+                      onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
                       className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
                         isSelected 
                           ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-2 ring-blue-300 dark:ring-blue-600'
@@ -837,10 +842,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                         </div>
                       </div>
                       
-                      <div
-                        onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
-                        className="cursor-pointer"
-                      >
+                      <div>
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
                           {player.name}
                         </h4>
@@ -909,6 +911,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                   return (
                     <div
                       key={player.id}
+                      onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
                       className={`p-4 rounded-lg border transition-all duration-200 cursor-pointer ${
                         isSelected 
                           ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-500 ring-2 ring-blue-300 dark:ring-blue-600'
@@ -939,10 +942,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                         </div>
                       </div>
                       
-                      <div
-                        onClick={() => fetchPlayerStats(player.id, player.name, selectedYear)}
-                        className="cursor-pointer"
-                      >
+                      <div>
                         <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
                           {player.name}
                         </h4>

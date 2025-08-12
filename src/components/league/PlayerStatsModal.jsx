@@ -17,6 +17,9 @@ const PlayerStatsModal = ({
   const [loadingWeekly, setLoadingWeekly] = useState(false);
   const [selectedWeek, setSelectedWeek] = useState(null);
   const [weeklyCache, setWeeklyCache] = useState({});
+  const [draftPosition, setDraftPosition] = useState(null);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [leagueHistory, setLeagueHistory] = useState(null);
 
   const getLeagueScoring = (league) => {
     if (!league?.scoring_settings) return 'pts_ppr'; // default
@@ -96,11 +99,91 @@ const PlayerStatsModal = ({
     }
   }, [playerStatsTab, playerStatsData?.playerId, playerStatsData?.year, weeklyCache]);
 
-  // Reset weekly stats when player changes, but not year
+  // Fetch league history to get all years this league was active
+  const fetchLeagueHistory = async (currentLeague) => {
+    if (!currentLeague || leagueHistory) return leagueHistory;
+    
+    try {
+      const history = { [currentLeague.season]: currentLeague.league_id };
+      let previousLeagueId = currentLeague.previous_league_id;
+      
+      // Go backwards through league history
+      while (previousLeagueId) {
+        const prevLeagueResponse = await secureApiCall(`https://api.sleeper.app/v1/league/${previousLeagueId}`);
+        const prevLeague = await prevLeagueResponse.json();
+        history[prevLeague.season] = prevLeague.league_id;
+        previousLeagueId = prevLeague.previous_league_id;
+      }
+      
+      setLeagueHistory(history);
+      return history;
+    } catch (err) {
+      console.error('Error fetching league history:', err);
+      return { [currentLeague.season]: currentLeague.league_id };
+    }
+  };
+
+  // Fetch draft position for specific year
+  const fetchDraftPosition = async (playerId, year) => {
+    if (!playerId || !year || !leagueData) {
+      return;
+    }
+    
+    setLoadingDraft(true);
+    try {
+      const history = await fetchLeagueHistory(leagueData);
+      const leagueIdForYear = history[year];
+      
+      if (leagueIdForYear) {
+        const draftsResponse = await secureApiCall(`https://api.sleeper.app/v1/league/${leagueIdForYear}/drafts`);
+        const drafts = await draftsResponse.json();
+        
+        if (drafts && drafts.length > 0) {
+          const draftPicksResponse = await secureApiCall(`https://api.sleeper.app/v1/draft/${drafts[0].draft_id}/picks`);
+          const picks = await draftPicksResponse.json();
+          
+          const playerPick = picks.find(pick => pick.player_id === playerId);
+          if (playerPick) {
+            const teamsCount = drafts[0].settings?.teams || leagueData.settings?.teams || 10;
+            const pickInRound = playerPick.pick_no - ((playerPick.round - 1) * teamsCount);
+            
+            setDraftPosition({
+              round: playerPick.round,
+              pick: pickInRound,
+              overall: playerPick.pick_no
+            });
+          } else {
+            setDraftPosition(null);
+          }
+        } else {
+          setDraftPosition(null);
+        }
+      } else {
+        setDraftPosition(null);
+      }
+    } catch (err) {
+      console.error('Error fetching draft position:', err);
+      setDraftPosition(null);
+    } finally {
+      setLoadingDraft(false);
+    }
+  };
+
+  // Reset weekly stats and draft position when player or year changes
   useEffect(() => {
     setWeeklyStats(null);
     setSelectedWeek(null);
-  }, [playerStatsData?.playerId]);
+    setDraftPosition(null);
+    
+    if (playerStatsData?.playerId && playerStatsData?.year && leagueData) {
+      fetchDraftPosition(playerStatsData.playerId, playerStatsData.year);
+    }
+  }, [playerStatsData?.playerId, playerStatsData?.year, leagueData]);
+
+  // Reset league history when league changes
+  useEffect(() => {
+    setLeagueHistory(null);
+  }, [leagueData?.league_id]);
 
   if (!showPlayerStats) return null;
 
@@ -191,18 +274,27 @@ const PlayerStatsModal = ({
                 <div className="space-y-6">
                   {/* Player Info */}
                   <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 p-4 rounded-lg">
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-sm">
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4 text-sm">
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Position:</span>
                         <p className="font-bold">{playerStatsData.playerInfo?.position || 'N/A'}</p>
                       </div>
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Team:</span>
-                        <p className="font-bold">{playerStatsData.playerInfo?.team || 'N/A'}</p>
+                        <p className="font-bold">{playerStatsData.team || playerStatsData.playerInfo?.team || 'N/A'}</p>
                       </div>
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Age:</span>
                         <p className="font-bold">{playerStatsData.playerInfo?.age || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <span className="text-gray-500 dark:text-gray-400">Draft:</span>
+                        <p className="font-bold text-orange-600 dark:text-orange-400">
+                          {loadingDraft ? '...' : 
+                           draftPosition ? `R${draftPosition.round}.${draftPosition.pick} (${draftPosition.overall})` : 
+                           leagueHistory && leagueHistory[playerStatsData.year] ? 'Undrafted' : 'N/A'
+                          }
+                        </p>
                       </div>
                       <div>
                         <span className="text-gray-500 dark:text-gray-400">Games:</span>
