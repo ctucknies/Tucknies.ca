@@ -649,7 +649,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 {user ? (
                   <>
                     <div>
-                      <label className="block text-sm font-medium mb-2">Year</label>
+                      <label className="block text-sm font-medium mb-2 text-white">Year</label>
                       <select
                         value={selectedYear}
                         onChange={(e) => setSelectedYear(parseInt(e.target.value))}
@@ -662,7 +662,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-2">Your Leagues</label>
+                      <label className="block text-sm font-medium mb-2 text-white">Your Leagues</label>
                       <div className="space-y-2">
                         <select
                           value={tempFilters.league}
@@ -715,7 +715,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 )}
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Position</label>
+                  <label className="block text-sm font-medium mb-2 text-white">Position</label>
                   <select
                     value={tempFilters.position}
                     onChange={(e) => {
@@ -733,7 +733,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Team</label>
+                  <label className="block text-sm font-medium mb-2 text-white">Team</label>
                   <select
                     value={tempFilters.team}
                     onChange={(e) => {
@@ -751,7 +751,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Availability</label>
+                  <label className="block text-sm font-medium mb-2 text-white">Availability</label>
                   <select
                     value={tempFilters.availability}
                     onChange={(e) => {
@@ -768,7 +768,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Sort By</label>
+                  <label className="block text-sm font-medium mb-2 text-white">Sort By</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -798,7 +798,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 shadow-2xl mb-8"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-white">
                 {leagueData ? `Available Players in ${leagueData.name}` : 'League Players'} ({availablePlayers.length})
               </h3>
               {loadingLeague && (
@@ -908,7 +908,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-8 shadow-2xl"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">
+              <h3 className="text-lg font-semibold text-white">
                 Search Results ({searchResults.length})
               </h3>
               {searchResults.length > 0 && (

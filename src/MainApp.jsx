@@ -5,6 +5,7 @@ import FallbackSpinner from './components/FallbackSpinner';
 import NavBar from './components/NavBar';
 import Home from './components/Home';
 import LeagueManager from './components/LeagueManager';
+import TradeCrafter from './components/TradeCrafter';
 import endpoints from './constants/endpoints';
 
 function PortfolioLayout({ children }) {
@@ -32,6 +33,7 @@ function MainApp() {
     <Suspense fallback={<FallbackSpinner />}>
       <Routes>
         <Route path="/" element={<LeagueManager />} />
+        <Route path="/trade-crafter" element={<TradeCrafter onBack={() => window.history.back()} />} />
         <Route path="/portfolio" element={<PortfolioLayout><Home /></PortfolioLayout>} />
         {!isLoading && data?.sections?.filter(route => route.component !== 'LeagueManager').map((route) => {
           const SectionComponent = React.lazy(() => import(`./components/${route.component}`));

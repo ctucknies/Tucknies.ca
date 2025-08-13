@@ -105,6 +105,7 @@ function LeagueManager() {
   const [showPlayerStatsPage, setShowPlayerStatsPage] = useState(false);
   const [showTradeFinder, setShowTradeFinder] = useState(false);
   const [showLeagueScouter, setShowLeagueScouter] = useState(false);
+  const [showTradeCrafter, setShowTradeCrafter] = useState(false);
   
   // API cache to prevent duplicate requests
   const [apiCache, setApiCache] = useState(new Map());
@@ -114,6 +115,7 @@ function LeagueManager() {
   const LazyPlayerStatsPage = React.lazy(() => import('./PlayerStatsPage'));
   const LazyTradeFinder = React.lazy(() => import('./TradeFinder'));
   const LazyLeagueScouter = React.lazy(() => import('./LeagueScouter'));
+  const LazyTradeCrafter = React.lazy(() => import('./TradeCrafter'));
 
   // Memoized cached API call function
   const cachedApiCall = useCallback(async (url, cacheKey = url, ttl = 300000) => { // 5 min TTL
@@ -969,6 +971,12 @@ function LeagueManager() {
                 Trade Finder
               </button>
               <button 
+                onClick={() => setShowTradeCrafter(true)}
+                className="text-gray-300 hover:text-white transition-colors"
+              >
+                Trade Crafter
+              </button>
+              <button 
                 onClick={() => setShowLeagueScouter(true)}
                 className="text-gray-300 hover:text-white transition-colors"
               >
@@ -1532,7 +1540,7 @@ function LeagueManager() {
       
       {/* Player Stats Page - Full Screen Overlay */}
       {showPlayerStatsPage && (
-        <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
           <React.Suspense fallback={
             <div className="flex items-center justify-center min-h-screen">
               <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
@@ -1588,6 +1596,26 @@ function LeagueManager() {
               onLeagueInfoClick={fetchLeagueInfo}
               onShowProfile={() => {
                 setShowLeagueScouter(false);
+                setShowProfile(true);
+              }}
+            />
+          </React.Suspense>
+        </div>
+      )}
+      
+      {/* Trade Crafter - Full Screen Overlay */}
+      {showTradeCrafter && (
+        <div className="fixed inset-0 z-[100] bg-white dark:bg-gray-900 overflow-y-auto">
+          <React.Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+              <div className="w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }>
+            <LazyTradeCrafter 
+              onBack={() => setShowTradeCrafter(false)}
+              onShowAuth={() => setShowAuth(true)}
+              onShowProfile={() => {
+                setShowTradeCrafter(false);
                 setShowProfile(true);
               }}
             />
