@@ -7,7 +7,8 @@ function UserProfile({ onClose }) {
   const { user, signOut } = useAuth()
   const [profile, setProfile] = useState({
     sleeper_username: '',
-    favorite_year: new Date().getFullYear().toString()
+    favorite_year: new Date().getFullYear().toString(),
+    favorite_league: ''
   })
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
@@ -47,6 +48,7 @@ function UserProfile({ onClose }) {
           email: user.email,
           sleeper_username: profile.sleeper_username,
           favorite_year: profile.favorite_year,
+          favorite_league: profile.favorite_league,
           updated_at: new Date().toISOString()
         })
 
@@ -142,6 +144,22 @@ function UserProfile({ onClose }) {
                 return <option key={year} value={year.toString()}>{year}</option>
               })}
             </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-2">
+              Favourite League
+            </label>
+            <input
+              type="text"
+              value={profile.favorite_league}
+              onChange={(e) => setProfile({ ...profile, favorite_league: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+              placeholder="Your favourite league name"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Name of your main or favourite fantasy league
+            </p>
           </div>
 
           {message && (

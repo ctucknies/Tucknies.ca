@@ -32,11 +32,25 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('sleeper_username')
+        .select('sleeper_username, favorite_year')
         .eq('id', user.id)
         .single();
       
       setHasSleeperUsername(!!data?.sleeper_username);
+      
+      // Set default values from profile
+      if (data?.sleeper_username) {
+        setFormData(prev => ({
+          ...prev,
+          username: data.sleeper_username
+        }));
+      }
+      if (data?.favorite_year) {
+        setFormData(prev => ({
+          ...prev,
+          year: data.favorite_year
+        }));
+      }
     } catch (error) {
       setHasSleeperUsername(false);
     }
@@ -45,6 +59,16 @@ const LeagueScouter = ({ onBack, onShowAuth, onLeagueInfoClick, onShowProfile })
   useEffect(() => {
     checkSleeperUsername();
   }, [user]);
+
+  // Auto-search when form data is populated
+  useEffect(() => {
+    if (formData.username && formData.year && hasSleeperUsername) {
+      const timer = setTimeout(() => {
+        handleSubmit({ preventDefault: () => {} });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.username, formData.year, hasSleeperUsername]);
 
   useEffect(() => {
     if (results && formData.username.trim()) {

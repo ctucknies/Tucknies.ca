@@ -171,21 +171,34 @@ function LeagueManager() {
     setPrevUser(user);
   }, [user, prevUser]);
 
+  // Auto-search when form data is populated
+  useEffect(() => {
+    if (formData.username && formData.year && user) {
+      const timer = setTimeout(() => {
+        handleSubmit({ preventDefault: () => {} });
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [formData.username, formData.year, user]);
+
 
 
   const loadUserProfile = async () => {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('sleeper_username, favorite_year')
+        .select('sleeper_username, favorite_year, favorite_league')
         .eq('id', user.id)
         .single();
       
       if (data) {
         setFormData({
           username: data.sleeper_username || '',
-          year: data.favorite_year || new Date().getFullYear().toString()
+          year: data.favorite_year || new Date().getFullYear().toString(),
+          league: data.favorite_league || ''
         });
+        
+
       }
     } catch (error) {
       // No saved profile found
@@ -1032,7 +1045,7 @@ function LeagueManager() {
           </div>
 
           {/* Feature Cards */}
-          <div className="grid md:grid-cols-3 gap-6 mt-16">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1040,9 +1053,9 @@ function LeagueManager() {
               className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
               onClick={() => setShowPlayerStatsPage(true)}
             >
-              <UserIcon className="w-12 h-12 text-blue-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Player Stats</h3>
-              <p className="text-gray-300">Deep dive into player performance and analytics</p>
+              <ChartBarIcon className="w-12 h-12 text-blue-400 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Player Analytics</h3>
+              <p className="text-gray-300">Search NFL players, compare stats, and analyze performance trends</p>
             </motion.div>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
@@ -1052,19 +1065,30 @@ function LeagueManager() {
               onClick={() => setShowTradeFinder(true)}
             >
               <ArrowsRightLeftIcon className="w-12 h-12 text-green-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Trade Finder</h3>
-              <p className="text-gray-300">Discover optimal trades to improve your team</p>
+              <h3 className="text-xl font-bold text-white mb-2">Smart Trades</h3>
+              <p className="text-gray-300">Trade suggestions based on team strengths and needs</p>
             </motion.div>
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              onClick={() => setShowTradeCrafter(true)}
+            >
+              <Cog6ToothIcon className="w-12 h-12 text-orange-400 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">Trade Builder</h3>
+              <p className="text-gray-300">Build and analyze custom trades with detailed team breakdowns</p>
+            </motion.div>
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
               onClick={() => setShowLeagueScouter(true)}
             >
-              <MagnifyingGlassIcon className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">League Scouter</h3>
-              <p className="text-gray-300">Scout and analyze league trends and data</p>
+              <UserGroupIcon className="w-12 h-12 text-purple-400 mb-4" />
+              <h3 className="text-xl font-bold text-white mb-2">League Intel</h3>
+              <p className="text-gray-300">Scout opponents, analyze league history, and track member stats</p>
             </motion.div>
           </div>
         </motion.div>

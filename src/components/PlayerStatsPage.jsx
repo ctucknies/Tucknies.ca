@@ -83,14 +83,17 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('sleeper_username')
+        .select('sleeper_username, favorite_year, favorite_league')
         .eq('id', user.id)
         .single();
       
       if (data?.sleeper_username) {
         setSleeperUsername(data.sleeper_username);
         setHasSleeperUsername(true);
-        syncUserLeagues(data.sleeper_username);
+        if (data.favorite_year) {
+          setSelectedYear(parseInt(data.favorite_year));
+        }
+        syncUserLeagues(data.sleeper_username, data.favorite_league);
       } else {
         setHasSleeperUsername(false);
       }
@@ -100,7 +103,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
     }
   };
 
-  const syncUserLeagues = async (username = sleeperUsername) => {
+  const syncUserLeagues = async (username = sleeperUsername, favoriteLeague = null) => {
     if (!username) return;
     
     setLoadingUserLeagues(true);
@@ -114,12 +117,26 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
       if (!leaguesResponse.ok) throw new Error('No leagues found');
       
       const leagues = await leaguesResponse.json();
-      setUserLeagues(leagues.map(league => ({
+      const leaguesList = leagues.map(league => ({
         id: league.league_id,
         name: league.name,
         total_rosters: league.total_rosters,
         season: league.season
-      })));
+      }));
+      setUserLeagues(leaguesList);
+      
+      // Auto-select favorite league if it exists - use setTimeout to ensure state is updated
+      if (favoriteLeague) {
+        setTimeout(() => {
+          const favoriteLeagueMatch = leaguesList.find(league => 
+            league.name.toLowerCase().includes(favoriteLeague.toLowerCase())
+          );
+          if (favoriteLeagueMatch) {
+            setTempFilters(prev => ({ ...prev, league: favoriteLeagueMatch.id }));
+            setFilters(prev => ({ ...prev, league: favoriteLeagueMatch.id }));
+          }
+        }, 100);
+      }
     } catch (err) {
       console.error('Error syncing leagues:', err);
       setUserLeagues([]);
@@ -539,10 +556,13 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-12 text-center shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
+            <p className="text-gray-300 text-lg mb-8">
               {!user 
                 ? 'You need to be logged in to use the Player Statistics feature.'
                 : 'You need to add your Sleeper username in your profile to use this feature.'}
@@ -557,7 +577,7 @@ function PlayerStatsPage({ onBack, onShowAuth, onShowProfile }) {
                   onBack();
                 }
               }}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg font-semibold text-lg"
             >
               {!user ? 'Go Back to Sign In' : 'Add Sleeper Username'}
             </button>

@@ -18,6 +18,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
   const { user } = useAuth();
   const [selectedLeague, setSelectedLeague] = useState('');
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [userLeagues, setUserLeagues] = useState([]);
   const [loadingLeagues, setLoadingLeagues] = useState(false);
   const [leagueData, setLeagueData] = useState(null);
@@ -62,23 +63,42 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
     try {
       const { data } = await supabase
         .from('profiles')
-        .select('sleeper_username')
+        .select('sleeper_username, favorite_league, favorite_year')
         .eq('id', user.id)
         .single();
       
       if (data?.sleeper_username) {
         setHasSleeperUsername(true);
+        
+        // Set favorite year if not already loaded
+        if (!profileLoaded && data.favorite_year) {
+          setSelectedYear(parseInt(data.favorite_year));
+          year = parseInt(data.favorite_year);
+          setProfileLoaded(true);
+        }
+        
         const userResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${data.sleeper_username}`);
         const userData = await userResponse.json();
         
         const leaguesResponse = await secureApiCall(`https://api.sleeper.app/v1/user/${userData.user_id}/leagues/nfl/${year}`);
         const leagues = await leaguesResponse.json();
         
-        setUserLeagues(leagues.map(league => ({
+        const leaguesList = leagues.map(league => ({
           id: league.league_id,
           name: league.name,
           total_rosters: league.total_rosters
-        })));
+        }));
+        setUserLeagues(leaguesList);
+        
+        // Auto-select favorite league if it exists
+        if (data?.favorite_league) {
+          const favoriteLeague = leaguesList.find(league => 
+            league.name.toLowerCase().includes(data.favorite_league.toLowerCase())
+          );
+          if (favoriteLeague) {
+            setSelectedLeague(favoriteLeague.id);
+          }
+        }
       } else {
         setHasSleeperUsername(false);
       }
@@ -97,6 +117,16 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
     }
   }, [user, selectedYear]);
 
+  // Auto-search when league is selected and all data is ready
+  useEffect(() => {
+    if (selectedLeague && Object.keys(allPlayers).length > 0 && Object.keys(playerStats).length > 0) {
+      const timer = setTimeout(() => {
+        analyzeLeague();
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedLeague, allPlayers, playerStats]);
+
   useEffect(() => {
     loadPlayerStats(selectedYear);
   }, [selectedYear]);
@@ -104,7 +134,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
   // Don't render main content if not authenticated or no sleeper username
   if (!user || !hasSleeperUsername) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-blue-900/20">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="max-w-7xl mx-auto p-6 sm:p-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -114,15 +144,15 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
             <div className="flex items-center gap-4 mb-6">
               <button
                 onClick={onBack}
-                className="w-12 h-12 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl border border-gray-200/50 dark:border-gray-700/50 flex items-center justify-center hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 shadow-lg"
+                className="w-14 h-14 bg-white/10 backdrop-blur-xl rounded-2xl border border-white/20 flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl"
               >
-                <ArrowLeftIcon className="w-5 h-5 text-gray-700 dark:text-gray-300" />
+                <ArrowLeftIcon className="w-6 h-6 text-white" />
               </button>
               <div>
-                <h1 className="text-4xl font-black bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 dark:from-white dark:via-gray-100 dark:to-white bg-clip-text text-transparent">
+                <h1 className="text-5xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
                   Trade Finder
                 </h1>
-                <p className="text-lg text-gray-500 dark:text-gray-400 font-medium">
+                <p className="text-xl text-gray-300 font-medium">
                   {!user ? 'Please log in to access the Trade Finder' : 'Please add your Sleeper username to access the Trade Finder'}
                 </p>
               </div>
@@ -133,10 +163,13 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-8 text-center shadow-lg"
+            className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 p-12 text-center shadow-2xl"
           >
-            <h2 className="text-xl font-bold mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <span className="text-3xl">🔒</span>
+            </div>
+            <h2 className="text-3xl font-bold text-white mb-4">{!user ? 'Authentication Required' : 'Sleeper Username Required'}</h2>
+            <p className="text-gray-300 text-lg mb-8">
               {!user 
                 ? 'You need to be logged in to use the Trade Finder feature.'
                 : 'You need to add your Sleeper username in your profile to use this feature.'}
@@ -151,7 +184,7 @@ function TradeFinder({ onBack, onShowPlayerStats, onShowTeamModal, onShowAuth, o
                   onBack();
                 }
               }}
-              className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+              className="px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-2xl hover:from-blue-600 hover:to-purple-600 transition-all duration-300 shadow-lg font-semibold text-lg"
             >
               {!user ? 'Go Back to Sign In' : 'Add Sleeper Username'}
             </button>
