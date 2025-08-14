@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
-import { useTheme } from '../App';
+import { useTheme } from '../hooks/useTheme';
 
 function ThemeToggler() {
   const { isDark, toggleTheme } = useTheme();

@@ -275,7 +275,12 @@ const MatchupSection = ({ matchups, leagueId, season, onPlayerClick }) => {
                                   {player.position}
                                 </span>
                                 <div>
-                                  <div className="font-medium">{player.name}</div>
+                                  <button 
+                                    onClick={() => onPlayerClick?.(player.id, player.name, season, weekDetails.week)}
+                                    className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                  >
+                                    {player.name}
+                                  </button>
                                   <div className="text-xs text-gray-500">{player.team}</div>
                                 </div>
                               </div>
@@ -312,7 +317,12 @@ const MatchupSection = ({ matchups, leagueId, season, onPlayerClick }) => {
                                     {player.position}
                                   </span>
                                   <div>
-                                    <div className="font-medium">{player.name}</div>
+                                    <button 
+                                      onClick={() => onPlayerClick?.(player.id, player.name, season, weekDetails.week)}
+                                      className="font-medium hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-left"
+                                    >
+                                      {player.name}
+                                    </button>
                                     <div className="text-xs text-gray-500">{player.team}</div>
                                   </div>
                                 </div>

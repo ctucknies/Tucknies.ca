@@ -1,21 +1,13 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React from 'react';
 import './App.css';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MainApp from './MainApp';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import Auth from './components/Auth';
+import { AuthProvider } from './contexts/AuthContext';
+import { ThemeProvider } from './hooks/useTheme';
 import ErrorBoundary from './components/ErrorBoundary';
 
-const ThemeContext = createContext();
-
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-};
+export { useTheme } from './hooks/useTheme';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,28 +33,12 @@ const queryClient = new QueryClient({
 });
 
 function AppContent() {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved ? JSON.parse(saved) : true;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('darkMode', JSON.stringify(isDark));
-    document.documentElement.classList.toggle('dark', isDark);
-  }, [isDark]);
-
-  const toggleTheme = () => setIsDark(!isDark);
-
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
-      <div className={`min-h-screen transition-colors duration-300 ${
-        isDark ? 'dark bg-gray-900 text-white' : 'bg-white text-gray-900'
-      }`}>
-        <BrowserRouter>
-          <MainApp />
-        </BrowserRouter>
-      </div>
-    </ThemeContext.Provider>
+    <div className="min-h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-300">
+      <BrowserRouter>
+        <MainApp />
+      </BrowserRouter>
+    </div>
   );
 }
 
@@ -70,9 +46,11 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppContent />
+          </AuthProvider>
+        </ThemeProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

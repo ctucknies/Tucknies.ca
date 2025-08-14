@@ -27,6 +27,18 @@
     <title>Fantasy Hub</title>
   </head>
   <body>
+    <script>
+      // Prevent flash of unstyled content by setting theme immediately
+      (function() {
+        const theme = localStorage.getItem('theme');
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = theme ? theme === 'dark' : systemDark;
+        
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        }
+      })();
+    </script>
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
     <!--

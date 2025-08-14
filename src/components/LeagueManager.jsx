@@ -961,7 +961,7 @@ function LeagueManager() {
   }, [userData, fetchPlayerModalData]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
       {/* Navigation Bar */}
       <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -1054,7 +1054,7 @@ function LeagueManager() {
               onClick={() => setShowPlayerStatsPage(true)}
             >
               <ChartBarIcon className="w-12 h-12 text-blue-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Player Analytics</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Player Stats</h3>
               <p className="text-gray-300">Search NFL players, compare stats, and analyze performance trends</p>
             </motion.div>
             <motion.div 
@@ -1065,7 +1065,7 @@ function LeagueManager() {
               onClick={() => setShowTradeFinder(true)}
             >
               <ArrowsRightLeftIcon className="w-12 h-12 text-green-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Smart Trades</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Trade Finder</h3>
               <p className="text-gray-300">Trade suggestions based on team strengths and needs</p>
             </motion.div>
             <motion.div 
@@ -1076,7 +1076,7 @@ function LeagueManager() {
               onClick={() => setShowTradeCrafter(true)}
             >
               <Cog6ToothIcon className="w-12 h-12 text-orange-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">Trade Builder</h3>
+              <h3 className="text-xl font-bold text-white mb-2">Trade Crafter</h3>
               <p className="text-gray-300">Build and analyze custom trades with detailed team breakdowns</p>
             </motion.div>
             <motion.div 
@@ -1087,7 +1087,7 @@ function LeagueManager() {
               onClick={() => setShowLeagueScouter(true)}
             >
               <UserGroupIcon className="w-12 h-12 text-purple-400 mb-4" />
-              <h3 className="text-xl font-bold text-white mb-2">League Intel</h3>
+              <h3 className="text-xl font-bold text-white mb-2">League Scouter</h3>
               <p className="text-gray-300">Scout opponents, analyze league history, and track member stats</p>
             </motion.div>
           </div>
