@@ -1016,7 +1016,7 @@ function LeagueManager() {
       </nav>
 
       {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center min-h-screen px-6">
+      <div className="flex flex-col items-center justify-center min-h-screen px-6 pt-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
