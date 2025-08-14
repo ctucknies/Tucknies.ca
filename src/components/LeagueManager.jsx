@@ -1022,20 +1022,20 @@ function LeagueManager() {
           animate={{ opacity: 1, y: 0 }}
           className="text-center max-w-4xl mx-auto"
         >
-          <div className="mb-8">
-            <TrophyIcon className="w-24 h-24 mx-auto text-yellow-400 mb-6" />
-            <h1 className="text-6xl md:text-7xl font-black text-white mb-6 leading-tight">
+          <div className="mb-6 sm:mb-8">
+            <TrophyIcon className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto text-yellow-400 mb-4 sm:mb-6" />
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-white mb-4 sm:mb-6 leading-tight px-2">
               Fantasy Football
               <span className="block text-transparent bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text">
                 Reimagined
               </span>
             </h1>
-            <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
+            <p className="text-base sm:text-lg md:text-xl text-gray-300 mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
               Analyze your leagues, track player stats, find trades, and dominate your competition with advanced fantasy football tools.
             </p>
           </div>
 
-          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-8 border border-white/20 shadow-2xl">
+          <div className="bg-white/10 backdrop-blur-xl rounded-2xl p-4 sm:p-6 md:p-8 border border-white/20 shadow-2xl mx-2 sm:mx-4">
             <LeagueSearch 
               formData={formData}
               setFormData={setFormData}
@@ -1045,12 +1045,12 @@ function LeagueManager() {
           </div>
 
           {/* Feature Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-8 sm:mt-12 md:mt-16 px-2 sm:px-4">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
               onClick={() => setShowPlayerStatsPage(true)}
             >
               <ChartBarIcon className="w-12 h-12 text-blue-400 mb-4" />
@@ -1061,7 +1061,7 @@ function LeagueManager() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
               onClick={() => setShowTradeFinder(true)}
             >
               <ArrowsRightLeftIcon className="w-12 h-12 text-green-400 mb-4" />
@@ -1072,7 +1072,7 @@ function LeagueManager() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
               onClick={() => setShowTradeCrafter(true)}
             >
               <Cog6ToothIcon className="w-12 h-12 text-orange-400 mb-4" />
@@ -1083,7 +1083,7 @@ function LeagueManager() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
+              className="bg-white/5 backdrop-blur-xl rounded-xl p-4 sm:p-6 border border-white/10 hover:bg-white/10 transition-all cursor-pointer"
               onClick={() => setShowLeagueScouter(true)}
             >
               <UserGroupIcon className="w-12 h-12 text-purple-400 mb-4" />
@@ -1098,7 +1098,7 @@ function LeagueManager() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="fixed top-24 left-1/2 transform -translate-x-1/2 bg-red-500/90 backdrop-blur-xl border border-red-400/50 rounded-xl p-4 shadow-lg z-50"
+          className="fixed top-20 sm:top-24 left-2 right-2 sm:left-1/2 sm:right-auto sm:transform sm:-translate-x-1/2 sm:max-w-md bg-red-500/90 backdrop-blur-xl border border-red-400/50 rounded-xl p-4 shadow-lg z-50"
         >
           <div className="flex items-center gap-3">
             <span className="text-white text-sm">⚠️</span>
