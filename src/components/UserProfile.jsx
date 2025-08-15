@@ -23,15 +23,21 @@ function UserProfile({ onClose }) {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('sleeper_username, favorite_year, favorite_league')
         .eq('id', user.id)
         .single()
 
-      if (data) {
-        setProfile(data)
+      if (data && !error) {
+        setProfile({
+          sleeper_username: data.sleeper_username || '',
+          favorite_year: data.favorite_year || new Date().getFullYear().toString(),
+          favorite_league: data.favorite_league || ''
+        })
+      } else {
+        console.log('No existing profile found, using defaults')
       }
     } catch (error) {
-      console.log('No profile found, will create on save')
+      console.log('Error loading profile:', error.message)
     }
   }
 
@@ -41,21 +47,30 @@ function UserProfile({ onClose }) {
     setMessage('')
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .upsert({
           id: user.id,
           email: user.email,
-          sleeper_username: profile.sleeper_username,
-          favorite_year: profile.favorite_year,
-          favorite_league: profile.favorite_league,
+          sleeper_username: profile.sleeper_username || '',
+          favorite_year: profile.favorite_year || new Date().getFullYear().toString(),
+          favorite_league: profile.favorite_league || '',
           updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'id'
         })
 
-      if (error) throw error
+      if (error) {
+        console.error('Supabase error:', error)
+        throw error
+      }
+      
       setMessage('Profile saved successfully!')
+      setTimeout(() => setMessage(''), 3000)
     } catch (error) {
-      setMessage('Error saving profile: ' + error.message)
+      console.error('Save profile error:', error)
+      setMessage('Error saving profile: ' + (error.message || 'Unknown error'))
+      setTimeout(() => setMessage(''), 5000)
     } finally {
       setLoading(false)
     }
@@ -94,7 +109,7 @@ function UserProfile({ onClose }) {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full p-6"
+        className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-6">
