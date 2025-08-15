@@ -964,48 +964,60 @@ function LeagueManager() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-gray-50 dark:from-slate-900 dark:via-purple-900 dark:to-slate-900">
       {/* Navigation Bar */}
       <nav className="fixed top-0 w-full z-50 bg-black/20 backdrop-blur-xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <TrophyIcon className="w-8 h-8 text-yellow-400" />
-              <span className="text-xl font-bold text-white">Fantasy Hub</span>
+            <div className="flex items-center gap-2 sm:gap-3">
+              <TrophyIcon className="w-6 h-6 sm:w-8 sm:h-8 text-yellow-400" />
+              <span className="text-lg sm:text-xl font-bold text-white">Fantasy Hub</span>
             </div>
-            <div className="flex items-center gap-6">
+            
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="text-white p-2"
+              >
+                <Bars3Icon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center gap-4 lg:gap-6">
               <button 
                 onClick={() => setShowPlayerStatsPage(true)}
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base"
               >
                 Player Stats
               </button>
               <button 
                 onClick={() => setShowTradeFinder(true)}
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base"
               >
                 Trade Finder
               </button>
               <button 
                 onClick={() => setShowTradeCrafter(true)}
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base"
               >
                 Trade Crafter
               </button>
               <button 
                 onClick={() => setShowLeagueScouter(true)}
-                className="text-gray-300 hover:text-white transition-colors"
+                className="text-gray-300 hover:text-white transition-colors text-sm lg:text-base"
               >
                 League Scouter
               </button>
               {user ? (
                 <button
                   onClick={() => setShowProfile(true)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-2 lg:px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all text-sm lg:text-base"
                 >
                   Profile
                 </button>
               ) : (
                 <button
                   onClick={() => setShowAuth(true)}
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-3 py-2 lg:px-4 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all text-sm lg:text-base"
                 >
                   Sign In
                 </button>
@@ -1013,6 +1025,53 @@ function LeagueManager() {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Menu */}
+        {sidebarOpen && (
+          <div className="md:hidden bg-black/30 backdrop-blur-xl border-t border-white/10">
+            <div className="px-4 py-3 space-y-3">
+              <button 
+                onClick={() => { setShowPlayerStatsPage(true); setSidebarOpen(false); }}
+                className="block w-full text-left text-gray-300 hover:text-white transition-colors py-2"
+              >
+                Player Stats
+              </button>
+              <button 
+                onClick={() => { setShowTradeFinder(true); setSidebarOpen(false); }}
+                className="block w-full text-left text-gray-300 hover:text-white transition-colors py-2"
+              >
+                Trade Finder
+              </button>
+              <button 
+                onClick={() => { setShowTradeCrafter(true); setSidebarOpen(false); }}
+                className="block w-full text-left text-gray-300 hover:text-white transition-colors py-2"
+              >
+                Trade Crafter
+              </button>
+              <button 
+                onClick={() => { setShowLeagueScouter(true); setSidebarOpen(false); }}
+                className="block w-full text-left text-gray-300 hover:text-white transition-colors py-2"
+              >
+                League Scouter
+              </button>
+              {user ? (
+                <button
+                  onClick={() => { setShowProfile(true); setSidebarOpen(false); }}
+                  className="block w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all mt-3"
+                >
+                  Profile
+                </button>
+              ) : (
+                <button
+                  onClick={() => { setShowAuth(true); setSidebarOpen(false); }}
+                  className="block w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all mt-3"
+                >
+                  Sign In
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
@@ -1652,18 +1711,18 @@ function LeagueManager() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-2 sm:p-4"
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4"
           onClick={() => setShowAuth(false)}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="relative"
+            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               onClick={() => setShowAuth(false)}
-              className="absolute top-4 right-4 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full p-2"
+              className="absolute top-2 right-2 z-10 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 bg-white dark:bg-gray-800 rounded-full p-2 text-xl leading-none"
             >
               ✕
             </button>
