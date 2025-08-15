@@ -11,6 +11,29 @@
   code {
     @apply font-mono;
   }
+  
+  /* Prevent horizontal scroll on mobile */
+  html, body {
+    @apply overflow-x-hidden;
+  }
+  
+  /* Mobile viewport fixes */
+  @media (max-width: 640px) {
+    .modal-content {
+      margin: 0.5rem;
+      max-width: calc(100vw - 1rem);
+      max-height: calc(100vh - 1rem);
+    }
+    
+    table {
+      font-size: 0.75rem;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 }
 
 @layer components {
@@ -24,5 +47,41 @@
   
   .input-field {
     @apply w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-colors duration-200;
+  }
+  
+  /* Mobile modal fixes */
+  .mobile-modal {
+    @apply fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4;
+  }
+  
+  .mobile-modal-content {
+    @apply w-full max-w-[95vw] max-h-[95vh] overflow-hidden rounded-xl bg-white dark:bg-gray-800;
+  }
+  
+  .mobile-modal-body {
+    @apply overflow-y-auto max-h-[85vh] p-3 sm:p-6;
+  }
+  
+  /* Mobile table fixes */
+  .mobile-table {
+    @apply w-full overflow-x-auto;
+  }
+  
+  .mobile-table table {
+    @apply min-w-full text-xs sm:text-sm;
+  }
+  
+  .mobile-table th,
+  .mobile-table td {
+    @apply px-2 py-2 sm:px-4 sm:py-3;
+  }
+  
+  /* Mobile responsive text */
+  .mobile-text {
+    @apply text-sm sm:text-base;
+  }
+  
+  .mobile-text-xs {
+    @apply text-xs sm:text-sm;
   }
 }

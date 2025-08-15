@@ -1711,13 +1711,13 @@ function LeagueManager() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] p-4"
+          className="mobile-modal bg-black bg-opacity-50 z-[200]"
           onClick={() => setShowAuth(false)}
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="relative w-full max-w-md max-h-[90vh] overflow-y-auto"
+            className="mobile-modal-content max-w-md"
             onClick={(e) => e.stopPropagation()}
           >
             <button

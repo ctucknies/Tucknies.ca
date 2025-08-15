@@ -117,15 +117,16 @@ function UserProfile({ onClose }) {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="mobile-modal bg-black bg-opacity-50"
       onClick={onClose}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white dark:bg-gray-800 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-4 sm:p-6"
+        className="mobile-modal-content max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mobile-modal-body">
         <div className="flex justify-between items-center mb-6">
           <h3 className="text-xl font-bold">My Profile</h3>
           <button
@@ -225,6 +226,7 @@ function UserProfile({ onClose }) {
           </div>
         </form>
         )}
+        </div>
       </motion.div>
     </motion.div>
   )
