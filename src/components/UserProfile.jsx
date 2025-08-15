@@ -11,6 +11,7 @@ function UserProfile({ onClose }) {
     favorite_league: ''
   })
   const [loading, setLoading] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(true)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -20,24 +21,37 @@ function UserProfile({ onClose }) {
   }, [user])
 
   const loadProfile = async () => {
+    if (!user?.id) {
+      console.log('No user ID available')
+      setLoadingProfile(false)
+      return
+    }
+
     try {
+      console.log('Loading profile for user:', user.id)
       const { data, error } = await supabase
         .from('profiles')
         .select('sleeper_username, favorite_year, favorite_league')
         .eq('id', user.id)
-        .single()
+        .maybeSingle()
 
-      if (data && !error) {
-        setProfile({
+      console.log('Profile query result:', { data, error })
+
+      if (data) {
+        const newProfile = {
           sleeper_username: data.sleeper_username || '',
           favorite_year: data.favorite_year || new Date().getFullYear().toString(),
           favorite_league: data.favorite_league || ''
-        })
+        }
+        console.log('Setting profile:', newProfile)
+        setProfile(newProfile)
       } else {
         console.log('No existing profile found, using defaults')
       }
     } catch (error) {
-      console.log('Error loading profile:', error.message)
+      console.error('Error loading profile:', error)
+    } finally {
+      setLoadingProfile(false)
     }
   }
 
@@ -116,7 +130,7 @@ function UserProfile({ onClose }) {
           <h3 className="text-xl font-bold">My Profile</h3>
           <button
             onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl leading-none"
           >
             ✕
           </button>
@@ -127,6 +141,12 @@ function UserProfile({ onClose }) {
             <strong>Email:</strong> {user?.email}
           </p>
         </div>
+
+        {loadingProfile ? (
+          <div className="flex justify-center py-8">
+            <div className="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : (
 
         <form onSubmit={saveProfile} className="space-y-4">
           <div>
@@ -204,6 +224,7 @@ function UserProfile({ onClose }) {
             </button>
           </div>
         </form>
+        )}
       </motion.div>
     </motion.div>
   )
