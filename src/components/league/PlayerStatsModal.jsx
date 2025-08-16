@@ -22,6 +22,16 @@ const PlayerStatsModal = React.memo(({
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [leagueHistory, setLeagueHistory] = useState(null);
 
+  // Get available tabs for swipe navigation
+  const availableTabs = useMemo(() => {
+    const tabs = ['current', 'weekly', 'summary'];
+    if (allYearStats && playerStatsTab !== 'summary') {
+      const years = Object.keys(allYearStats).filter(y => (allYearStats[y].stats.gp || 0) > 0);
+      tabs.push(...years);
+    }
+    return tabs;
+  }, [allYearStats, playerStatsTab]);
+
   const getLeagueScoring = (league) => {
     if (!league?.scoring_settings) return 'pts_ppr'; // default
     
@@ -219,7 +229,43 @@ const PlayerStatsModal = React.memo(({
               <div className="w-8 h-8 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />
             </div>
           ) : playerStatsData && (
-            <div>
+            <motion.div
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              onDragEnd={(event, info) => {
+                const threshold = 100;
+                const currentIndex = availableTabs.findIndex(tab => {
+                  if (tab === 'current' || tab === 'weekly' || tab === 'summary') {
+                    return playerStatsTab === tab;
+                  }
+                  return tab == playerStatsData?.year;
+                });
+                
+                if (info.offset.x > threshold && currentIndex > 0) {
+                  // Swipe right - go to previous tab
+                  const newTab = availableTabs[currentIndex - 1];
+                  if (newTab === 'current' || newTab === 'weekly' || newTab === 'summary') {
+                    setPlayerStatsTab(newTab);
+                    if (newTab === 'weekly' && !weeklyStats && playerStatsData.playerId) {
+                      fetchWeeklyStats(playerStatsData.playerId, playerStatsData.year);
+                    }
+                  } else {
+                    onSwitchToYear(newTab);
+                  }
+                } else if (info.offset.x < -threshold && currentIndex < availableTabs.length - 1) {
+                  // Swipe left - go to next tab
+                  const newTab = availableTabs[currentIndex + 1];
+                  if (newTab === 'current' || newTab === 'weekly' || newTab === 'summary') {
+                    setPlayerStatsTab(newTab);
+                    if (newTab === 'weekly' && !weeklyStats && playerStatsData.playerId) {
+                      fetchWeeklyStats(playerStatsData.playerId, playerStatsData.year);
+                    }
+                  } else {
+                    onSwitchToYear(newTab);
+                  }
+                }
+              }}
+            >
               <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 mb-6">
                 <button
                   onClick={() => setPlayerStatsTab('current')}
@@ -636,7 +682,7 @@ const PlayerStatsModal = React.memo(({
                   </div>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
       </motion.div>
